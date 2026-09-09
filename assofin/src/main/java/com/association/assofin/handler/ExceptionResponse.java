@@ -13,6 +13,7 @@ import java.util.Set;
 @NoArgsConstructor
 @Builder
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
+//ExceptionResponse — the API error DTO
 public class ExceptionResponse {
     private Integer status;
     private String exceptionDec;

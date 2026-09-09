@@ -4,7 +4,7 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 import static org.springframework.http.HttpStatus.*;
-
+//BusinessErrorCodes — your business error catalog
 public enum BusinessErrorCodes {
 
     NO_CODE(0, NOT_IMPLEMENTED, "No code "),

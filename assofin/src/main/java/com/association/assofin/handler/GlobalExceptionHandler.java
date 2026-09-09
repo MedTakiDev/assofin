@@ -17,6 +17,7 @@ import static com.association.assofin.handler.BusinessErrorCodes.*;
 import static org.springframework.http.HttpStatus.*;
 
 @RestControllerAdvice
+//GlobalExceptionHandler — the central exception interceptor
 public class GlobalExceptionHandler {
     @ExceptionHandler(LockedException.class)
     public ResponseEntity<ExceptionResponse> handleException(LockedException exp) {
