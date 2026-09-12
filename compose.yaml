@@ -18,6 +18,13 @@ services:
       timeout: 5s
       retries: 5
 
+  mail-dev:
+    container_name: mail-dev-bdn
+    image: maildev/maildev
+    ports:
+      - "${MAILDEV_UI_PORT}:1080"
+      - "${MAILDEV_SMTP_PORT}:1025"
+
   #backend:
     #build:
     #  context: ./backend
