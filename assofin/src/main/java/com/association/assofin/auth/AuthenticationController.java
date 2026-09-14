@@ -96,12 +96,12 @@ public class AuthenticationController {
         System.out.println(ldapAuthenticationRequest.getPassword());
         return ResponseEntity.ok(ldapAuthenticationService.authenticate(ldapAuthenticationRequest));
     }*/
-    /*@GetMapping("/activate-account")
+    @GetMapping("/activate-account")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ResponseEntity<AuthenticationResponseDTO> activateAccount(@RequestParam String token){
         authService.activateAccount(token);
         return ResponseEntity.accepted().build();
-    }*/
+    }
 
 
 

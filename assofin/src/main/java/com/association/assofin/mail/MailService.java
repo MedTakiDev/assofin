@@ -26,7 +26,7 @@ public class MailService {
 
 
     @Async
-    public void sendValidationEmail(
+    public void sendAccountActivationEmail(
             String to,
             String username,
             EmailTemplateName emailTemplateName,

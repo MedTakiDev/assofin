@@ -13,3 +13,5 @@ application:
     jwt:
       secret-key: ${JWT_SECRET_KEY}
       expiration: ${JWT_EXPIRATION_MS:86400000}
+  frontend:
+    activation-url: ${FRONTEND_ACTIVATION_URL}
