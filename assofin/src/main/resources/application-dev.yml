@@ -20,14 +20,16 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      timeout: ${REDIS_TIMEOUT_MS:2s}
+      username: default
+      password: ${REDIS_PASSWORD}
+      timeout: ${REDIS_TIMEOUT_MS:2000ms}
+      client-type: lettuce
 
   mail:
-    host: ${MAILDEV_HOST}
-    port: ${MAILDEV_SMTP_PORT}
-    username: ${MAILDEV_USERNAME}
-    password: ${MAILDEV_PASSWORD}
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
 
     properties:
       mail:
