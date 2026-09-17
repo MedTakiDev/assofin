@@ -17,6 +17,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -38,7 +39,7 @@ public class AuthenticationService {
     public void register(RegistrationRequestDTO request){
         // Create new user
         User user = userService.saveUser(request);
-        //sendActivationEmail(user);
+        sendActivationEmail(user);
     }
 
     public AuthenticationResponseDTO authenticate(AuthenticationRequestDTO authenticationRequest) {
@@ -58,36 +59,31 @@ public class AuthenticationService {
                 .build();
     }
 
-    /*@Transactional todo implement activation account workflow
+    @Transactional
     public void activateAccount(String activationToken){
-        //Token savedToken = tokenService.findByToken(activationToken);
-        if(savedToken.getValidatedAt() != null){
-            throw new BadCredentialsException("Activation Token has already been validated");
-        }
-        if(LocalDateTime.now().isAfter(savedToken.getExpiredAt())) {
-            sendActivationEmail(savedToken.getUser()); // resend the activation account email
-            throw new BadCredentialsException("Activation Token has been expired. A new token has been sent");
-        }
-        var user = userService.findById(savedToken.getUser().getId()); // just to double-check the user
+        Long userId = activationTokenService.validateToken(activationToken);
+        var user = userService.findById(userId);
         user.setEnabled(true);
         userService.saveUser(user);
-        //consume token
-    }*/
+        activationTokenService.consumeToken(activationToken);
+    }
 
-    private void sendActivationEmail(User user){
-        //generate activation token
-        var activationToken = activationTokenService.createToken(user.getId());
-        //send activation mail
-        try {
-            mailService.sendAccountActivationEmail(
-                    user.getEmail(),
-                    user.getUsername(),
-                    EmailTemplateName.ACTIVATION_ACCOUNT,
-                    frontendProperties.activationUrl(),
-                    activationToken,
-                    "Avalon Odyssey account activation");
-        } catch (MessagingException e) {
-            throw new RuntimeException(e);
-        }
+    private void sendActivationEmail(User user) {
+        String activationToken = activationTokenService.createToken(user.getId());
+
+        // Appends ?token=... safely to http://localhost:4200/activate-account
+        String confirmationUrl = UriComponentsBuilder
+                .fromUriString(frontendProperties.activationUrl())
+                .queryParam("token", activationToken)
+                .build()
+                .toUriString();
+
+        mailService.sendAccountActivationEmail(
+                user.getEmail(),
+                user.getUsername(),
+                EmailTemplateName.ACTIVATION_ACCOUNT,
+                confirmationUrl,
+                "Avalon Odyssey account activation"
+        );
     }
 }

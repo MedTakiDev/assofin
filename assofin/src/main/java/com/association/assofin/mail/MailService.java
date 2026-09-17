@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,8 +32,8 @@ public class MailService {
             String username,
             EmailTemplateName emailTemplateName,
             String confirmationURL,
-            String activationCode,
-            String subject ) throws MessagingException {
+            /*activationCode used in case we send an activation account code to the user email*/
+            String subject ){
         String templateName;
         if(emailTemplateName == null) {
             templateName = EmailTemplateName.CONFIRM_EMAIL.name();
@@ -40,24 +41,30 @@ public class MailService {
             templateName = emailTemplateName.getName();
         }
         MimeMessage mimeMessage = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(
-                mimeMessage,
-                MULTIPART_MODE_MIXED,
-                UTF_8.name()
-        );
-        Map<String,Object> props = new HashMap<>();
-        props.put("username", username);
-        props.put("confirmation_url", confirmationURL);
-        props.put("activation_code", activationCode);
-        Context context = new Context();
-        context.setVariables(props);
-        helper.setFrom(FROM);
-        helper.setTo(to);
-        helper.setSubject(subject);
+        MimeMessageHelper helper = null;
+        try {
+            helper = new MimeMessageHelper(
+                    mimeMessage,
+                    MimeMessageHelper.MULTIPART_MODE_MIXED,
+                    StandardCharsets.UTF_8.name()
+            );
+            Map<String,Object> props = new HashMap<>();
+            props.put("username", username);
+            props.put("confirmation_url", confirmationURL);
+            //props.put("activation_code", activationCode);
+            Context context = new Context();
+            context.setVariables(props);
+            helper.setFrom(FROM);
+            helper.setTo(to);
+            helper.setSubject(subject);
 
-        String template = templateEngine.process(templateName, context);
-        helper.setText(template, true);
-        mailSender.send(mimeMessage);
+            String template = templateEngine.process(templateName, context);
+            helper.setText(template, true);
+            mailSender.send(mimeMessage);
+        } catch (MessagingException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
 

@@ -17,7 +17,7 @@ public class ActivationTokenService {
 
     private static final Duration TOKEN_TTL = Duration.ofMinutes(15);
 
-    private ActivationTokenStore activationTokenStore;
+    private final ActivationTokenStore activationTokenStore;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
