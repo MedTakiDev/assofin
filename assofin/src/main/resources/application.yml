@@ -12,6 +12,10 @@ application:
   security:
     jwt:
       secret-key: ${JWT_SECRET_KEY}
-      expiration: ${JWT_EXPIRATION_MS:86400000}
+      expiration: ${JWT_EXPIRATION_MS}
   frontend:
     activation-url: ${FRONTEND_ACTIVATION_URL}
+
+server:
+  servlet:
+    context-path: /api/v1/
