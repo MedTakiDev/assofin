@@ -1,0 +1,43 @@
+# ==============================================================================
+# DEVELOPMENT ENVIRONMENT CONFIGURATION (application-dev.yml)
+# ==============================================================================
+spring:
+  datasource:
+    # 'postgres-db' matches the service name defined in your compose.yaml file
+    # Internal container port for postgres is always 5432
+    url: jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      username: default
+      password: ${REDIS_PASSWORD}
+      timeout: ${REDIS_TIMEOUT_MS:2000ms}
+      client-type: lettuce
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000

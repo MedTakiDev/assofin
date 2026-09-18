@@ -1,0 +1,23 @@
+package com.association.assofin.handler;
+
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.*;
+
+import java.util.Map;
+import java.util.Set;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
+//ExceptionResponse — the API error DTO
+public class ExceptionResponse {
+    private Integer status;
+    private String exceptionDec;
+    private String errorMessage;
+    private Set<String> validationErrors;
+    private Map<String, String> errors;
+}

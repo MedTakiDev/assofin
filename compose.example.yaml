@@ -1,0 +1,77 @@
+services:
+
+  postgres:
+    image: postgres:17
+    container_name: ${POSTGRES_CONTAINER_NAME}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - assofin-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  redis:
+    image: redis:8-alpine
+    container_name: assofin.redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    networks:
+      - assofin-network
+
+#  mail-dev: in the production env we should use the actual mail server locally hosted or any online mail server solution this service is used only to test
+#    container_name: mail-dev-bdn
+#    image: maildev/maildev
+#    ports:
+#      - "${MAILDEV_UI_PORT}:1080"
+#      - "${MAILDEV_SMTP_PORT}:1025"
+
+#we should uncomment the bellow section in production env
+  #backend:
+    #build:
+    #  context: ./backend
+    #  dockerfile: Dockerfile
+    #container_name: ${BACKEND_CONTAINER_NAME}
+    #restart: unless-stopped
+    #env_file:
+    #  - ./backend/.env
+    #ports:
+    #  - "${BACKEND_PORT}:8080"
+    #depends_on:
+    #  postgres:
+    #    condition: service_healthy
+
+  #frontend:
+    #build:
+    #  context: ./frontend
+    #  dockerfile: Dockerfile
+    #container_name: ${FRONTEND_CONTAINER_NAME}
+    #restart: unless-stopped
+    #env_file:
+    #  - ./frontend/.env
+    #ports:
+    #  - "${FRONTEND_PORT}:4200"
+    #depends_on:
+    #  - backend
+
+networks:
+  assofin-network:
+
+volumes:
+  postgres_data:
+  redis-data:
