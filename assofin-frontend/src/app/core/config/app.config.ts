@@ -6,7 +6,6 @@ export interface AppConfig {
   primeNgKey: string;
 }
 
-export const APP_CONFIG = new InjectionToken<AppConfig>('app.config');
 
 export const AppConfigValue: AppConfig = {
   // Points to your local dev network address or domain proxy

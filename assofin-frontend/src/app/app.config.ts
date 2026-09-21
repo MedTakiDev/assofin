@@ -4,7 +4,7 @@ import { routes } from './app.routes';
 import {provideHttpClient} from '@angular/common/http';
 import {providePrimeNG} from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
-import { AppConfigValue } from './core/app.config';
+import { AppConfigValue } from './core/config/app.config';
 
 export const appConfig: ApplicationConfig = {
   providers: [
