@@ -4,7 +4,7 @@ import { routes } from './app.routes';
 import {provideHttpClient} from '@angular/common/http';
 import {providePrimeNG} from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
-import { AppConfigValue } from './core/config/app.config';
+import {APP_CONFIG_VALUE} from '@core/config/app.config';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,7 +24,7 @@ export const appConfig: ApplicationConfig = {
         },
       },
       // Enables modern built-in CSS transitions instead of legacy JS triggers
-      license: AppConfigValue.primeNgKey,
+      license: APP_CONFIG_VALUE.primeNgKey,
     }),
   ],
 };
