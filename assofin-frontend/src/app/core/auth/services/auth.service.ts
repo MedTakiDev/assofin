@@ -19,6 +19,31 @@ export class AuthService {
   readonly isAuthenticated = computed(() => !!this.currentUserSignal());
   readonly isInitialized = this.isInitializedSignal.asReadonly();
 
+  // Add this method inside your existing Injectable AuthService class
+  /**
+   * Synchronously checks if the logged-in user possesses a required permission
+   */
+  hasPermission(requiredPermission: AppPermission): boolean {
+    const user = this.currentUser();
+    if (!user) {
+      return false;
+    }
+
+    return user.role.permissions.includes(requiredPermission);
+  }
+
+  /**
+   * Synchronously checks if the logged-in user possesses AT LEAST ONE of multiple permissions
+   */
+  hasAnyPermission(requiredPermissions: AppPermission[]): boolean {
+    const user = this.currentUser();
+    if (!user) {
+      return false;
+    }
+
+    return requiredPermissions.some(permission => user.role.permissions.includes(permission));
+  }
+
   /**
    * Called on application boot (e.g. via APP_INITIALIZER or AuthGuard)
    * to verify an active session cookie without throwing unhandled exceptions.
