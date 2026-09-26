@@ -1,7 +1,7 @@
 import {Injectable, inject, signal, computed, Service} from '@angular/core';
 import { Observable, tap, catchError, of } from 'rxjs';
 import {AuthRepository} from '../repositories/auth.repository';
-import {UserProfileDto} from '../dto/user-profile.dto';
+import {AppPermission, UserProfileDto} from '../dto/user-profile.dto';
 import {LoginRequestDto} from '../dto/login-request.dto';
 import {RegisterRequestDto} from '../dto/register-request.dto';
 
