@@ -3,8 +3,10 @@ package com.association.assofin.auth;
 import com.association.assofin.auth.dto.AuthenticationRequestDTO;
 import com.association.assofin.auth.dto.AuthenticationResponseDTO;
 import com.association.assofin.auth.dto.RegistrationRequestDTO;
+import com.association.assofin.auth.dto.UserProfileResponseDTO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -100,6 +103,14 @@ public class AuthenticationController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ResponseEntity<AuthenticationResponseDTO> activateAccount(@RequestParam String token){
         authService.activateAccount(token);
+        return ResponseEntity.accepted().build();
+    }
+
+
+    @GetMapping("/user-profile")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public ResponseEntity<UserProfileResponseDTO> getUserProfile(HttpServletRequest  httpServletRequest){
+        // get authentication token from the cookies and  fetch the user profile and return the profile dto consuming the user service
         return ResponseEntity.accepted().build();
     }
 

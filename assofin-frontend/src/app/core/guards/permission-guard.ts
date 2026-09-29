@@ -1,6 +1,7 @@
 import {CanMatchFn, Route, Router, UrlSegment} from '@angular/router';
 import {AuthService} from '@auth/services/auth.service';
 import {inject} from '@angular/core';
+import {AppPermission} from '@auth/dto/user-profile.dto';
 /**
  * 🛡️ Enterprise Feature Read Permission Guard
  * @param feature The application domain module being requested (e.g. 'user', 'invoice')
@@ -16,7 +17,7 @@ export const permissionGuard = (feature: string): CanMatchFn => {
       return router.createUrlTree(['/login']);
     }
 
-    const requiredReadPermission = `${feature}:read`;
+    const requiredReadPermission = `${feature}:read` as AppPermission;
     if (authService.hasPermission(requiredReadPermission)) {
       return true; // Clearance verified! Safe to download and load module code.
     }

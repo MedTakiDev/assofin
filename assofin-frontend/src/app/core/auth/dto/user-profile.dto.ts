@@ -14,7 +14,8 @@ export type AppPermission =
 export interface UserProfileDto {
   id: string;
   email: string;
-  name: string;
+  firstname: string;
+  lastname: string;
   role: {
     name: string;
     permissions: AppPermission[]; // 👈 Array of granular permissions granted to this user

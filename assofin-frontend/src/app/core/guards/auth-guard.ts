@@ -10,7 +10,7 @@ export const authGuard: CanMatchFn = (route, segments) => {
 
   return authService.checkSession().pipe(
     take(1),
-    map((userProfile: UserProfileDto): boolean | UrlTree => {
+    map((userProfile: UserProfileDto|null): boolean | UrlTree => {
       if (authService.isInitialized() && authService.isAuthenticated()) {
         return true;
       }
