@@ -9,7 +9,8 @@ export interface AppConfig {
 export const APP_CONFIG = new InjectionToken<AppConfig>('app.config');
 
 export const APP_CONFIG_VALUE: AppConfig = {
+  // Points to your local dev network address or domain proxy
   apiUrl: import.meta.env.NG_APP_API_BASE_URL,
-  timeout: Number(import.meta.env.NG_APP_API_TIMEOUT) || 30_000,
-  primeNgKey: import.meta.env.NG_APP_PRIMEUI_LICENSE_KEY,
+  timeout:    Number(import.meta.env.NG_APP_API_TIMEOUT) || 30000,  // ← Number()
+  primeNgKey:import.meta.env.NG_APP_PRIMEUI_LICENSE_KEY,
 };
