@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import {Component, output} from '@angular/core';
 
 @Component({
   imports: [],
@@ -6,4 +6,7 @@ import { Component } from '@angular/core';
   styleUrl: './signup-form.css',
   templateUrl: './signup-form.html',
 })
-export class SignupForm {}
+export class SignupForm {
+  requestLogin = output<void>();
+
+}

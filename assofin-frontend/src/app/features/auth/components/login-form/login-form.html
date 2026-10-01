@@ -1,1 +1,55 @@
-<p>login-form works!</p>
+<div class="form-header">
+  <h4>Your logo</h4>
+  <h3>Login</h3>
+</div>
+
+<div class="form-fields-container">
+  <label for="email">Email</label>
+  <p-iconfield>
+    <!-- Added name="email" and [(ngModel)] -->
+    <input
+      pInputText
+      id="email"
+      name="email"
+      type="text"
+      variant="filled"
+
+      [(ngModel)]="email"
+      placeholder="username@gmail.com" />
+    <p-inputicon>
+      <svg data-p-icon="user" />
+    </p-inputicon>
+  </p-iconfield>
+</div>
+
+<div class="form-fields-container">
+  <label for="password">Password</label>
+  <p-iconfield>
+    <!-- FIX: Added name="password" -->
+    <input
+      pInputPassword
+      id="password"
+      name="password"
+      [(ngModel)]="password"
+      [(mask)]="mask"
+      placeholder="Password" />
+
+    <p-inputicon (click)="toggleMask()" style="cursor: pointer">
+      @if (mask()) {
+        <svg data-p-icon="eye"></svg>
+      } @else {
+        <svg data-p-icon="eye-slash"></svg>
+      }
+    </p-inputicon>
+  </p-iconfield>
+  <a href="#">or forget password</a>
+</div>
+
+
+<div class="form-fields-container">
+  <button class="large-form-button" pButton (click)="signIn()">Sign In</button>
+</div>
+
+<div class="Oauth2">
+  <span>Don’t have an account yet? <a  (click)="requestSignup.emit()" >Register for free</a></span>
+</div>
