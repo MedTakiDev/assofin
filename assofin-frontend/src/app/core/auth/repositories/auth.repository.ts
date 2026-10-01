@@ -5,46 +5,40 @@ import { Observable } from 'rxjs';
 import {LoginRequestDto} from '../dto/login-request.dto';
 import {UserProfileDto} from '../dto/user-profile.dto';
 import {RegisterRequestDto} from '../dto/register-request.dto';
+import {ApiService} from '@core/services/api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthRepository {
-  private readonly http = inject(HttpClient);
-
   //--------------------------- the above implementation is used to avoid eager api call by httpresource each time the service initialised
+  private readonly api = inject(ApiService);
+
+  /**
+   * Retrieves current active user session profile.
+   */
   getSession(): Observable<UserProfileDto> {
-    return this.http.get<UserProfileDto>('/api/v1/auth/me', {
-      withCredentials: true,
-    });
+    // Relative path clean of version prefixing
+    return this.api.get<UserProfileDto>('auth/me');
   }
 
   /**
    * Submits credentials for authentication.
    */
   login(credentials: LoginRequestDto): Observable<UserProfileDto> {
-    return this.http.post<UserProfileDto>('/api/v1/auth/login', credentials, {
-      withCredentials: true,
-    });
+    return this.api.post<UserProfileDto>('auth/login', credentials);
   }
 
   /**
    * Submits registration details for new account creation.
    */
   signup(payload: RegisterRequestDto): Observable<UserProfileDto> {
-    return this.http.post<UserProfileDto>('/api/v1/auth/register', payload, {
-      withCredentials: true,
-    });
+    return this.api.post<UserProfileDto>('auth/register', payload);
   }
 
   /**
    * Terminates active session on the backend.
    */
   logout(): Observable<void> {
-    return this.http.post<void>(
-      '/api/v1/auth/logout',
-      {},
-      {
-        withCredentials: true,
-      },
-    );
+    return this.api.post<void>('auth/logout', {});
   }
+
 }
