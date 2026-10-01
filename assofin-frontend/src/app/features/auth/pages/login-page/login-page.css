@@ -34,7 +34,7 @@
 
 .panel-img{
   min-width: auto;
-  height: 60%;
+  max-height: 50%;
   position: relative;
   margin: 30px ;
 }
