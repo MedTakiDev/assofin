@@ -1,55 +1,59 @@
-<div class="form-header">
-  <h4>Your logo</h4>
-  <h3>Login</h3>
-</div>
+<form [formGroup]="loginForm" (ngSubmit)="signIn($event)">
+  <div class="form-header">
+    <h4>Your logo</h4>
+    <h3>Login</h3>
+  </div>
 
-<div class="form-fields-container">
-  <label for="email">Email</label>
-  <p-iconfield>
-    <!-- Added name="email" and [(ngModel)] -->
-    <input
-      pInputText
-      id="email"
-      name="email"
-      type="text"
-      variant="filled"
+  <div class="form-fields-container">
+    <label for="email">Email</label>
+    <p-iconfield>
+      <input
+        pInputText
+        id="email"
+        type="email"
+        variant="filled"
+        formControlName="email"
+        placeholder="username@gmail.com" />
+      <p-inputicon>
+        <svg data-p-icon="user" />
+      </p-inputicon>
+    </p-iconfield>
+  </div>
 
-      [(ngModel)]="email"
-      placeholder="username@gmail.com" />
-    <p-inputicon>
-      <svg data-p-icon="user" />
-    </p-inputicon>
-  </p-iconfield>
-</div>
+  <div class="form-fields-container">
+    <label for="password">Password</label>
+    <p-iconfield>
+      <input
+        pInputPassword
+        id="password"
+        [type]="mask() ? 'password' : 'text'"
+        formControlName="password"
+        placeholder="Password" />
 
-<div class="form-fields-container">
-  <label for="password">Password</label>
-  <p-iconfield>
-    <!-- FIX: Added name="password" -->
-    <input
-      pInputPassword
-      id="password"
-      name="password"
-      [(ngModel)]="password"
-      [(mask)]="mask"
-      placeholder="Password" />
+      <p-inputicon (click)="toggleMask()" style="cursor: pointer">
+        @if (mask()) {
+          <svg data-p-icon="eye"></svg>
+        } @else {
+          <svg data-p-icon="eye-slash"></svg>
+        }
+      </p-inputicon>
+    </p-iconfield>
+    <a href="#">or forget password</a>
+  </div>
 
-    <p-inputicon (click)="toggleMask()" style="cursor: pointer">
-      @if (mask()) {
-        <svg data-p-icon="eye"></svg>
-      } @else {
-        <svg data-p-icon="eye-slash"></svg>
-      }
-    </p-inputicon>
-  </p-iconfield>
-  <a href="#">or forget password</a>
-</div>
+  <div class="form-fields-container">
+    <button
+      class="large-form-button"
+      pButton
+      type="submit"
+      [disabled]="loginForm.invalid">
+      Sign In
+    </button>
+  </div>
 
+  <div class="Oauth2">
 
-<div class="form-fields-container">
-  <button class="large-form-button" pButton (click)="signIn()">Sign In</button>
-</div>
+    <span>Don’t have an account yet? <a (click)="requestSignup.emit()" >Register for free</a></span>
 
-<div class="Oauth2">
-  <span>Don’t have an account yet? <a  (click)="requestSignup.emit()" >Register for free</a></span>
-</div>
+  </div>
+</form>

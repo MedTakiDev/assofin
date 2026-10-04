@@ -7,6 +7,10 @@ import {UserProfileDto} from '../dto/user-profile.dto';
 import {RegisterRequestDto} from '../dto/register-request.dto';
 import {ApiService} from '@core/services/api.service';
 
+export interface TempTokenResponse {
+  token: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthRepository {
   //--------------------------- the above implementation is used to avoid eager api call by httpresource each time the service initialised
@@ -27,6 +31,10 @@ export class AuthRepository {
     return this.api.post<UserProfileDto>('auth/login', credentials);
   }
 
+
+  loginToken(credentials: LoginRequestDto): Observable<TempTokenResponse> {
+    return this.api.post<TempTokenResponse>('auth/login', credentials);
+  }
   /**
    * Submits registration details for new account creation.
    */

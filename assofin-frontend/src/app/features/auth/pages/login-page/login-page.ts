@@ -43,9 +43,11 @@ export class LoginPage {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    this.authService.login(credentials).subscribe({
-      next: () => {
+    console.log(credentials);
+    this.authService.loginToken(credentials).subscribe({
+      next: (data) => {
         this.isLoading.set(false);
+        console.log(data.token);
         //this.router.navigateByUrl('/dashboard');//navigate user to the main view
       },
       error: (err) => {

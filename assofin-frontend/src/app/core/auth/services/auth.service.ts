@@ -1,6 +1,6 @@
 import {Injectable, inject, signal, computed, Service} from '@angular/core';
 import { Observable, tap, catchError, of } from 'rxjs';
-import {AuthRepository} from '../repositories/auth.repository';
+import {AuthRepository, TempTokenResponse} from '../repositories/auth.repository';
 import {AppPermission, UserProfileDto} from '../dto/user-profile.dto';
 import {LoginRequestDto} from '../dto/login-request.dto';
 import {RegisterRequestDto} from '../dto/register-request.dto';
@@ -69,6 +69,11 @@ export class AuthService {
     return this.authRepository
       .login(credentials)
       .pipe(tap((user) => this.currentUserSignal.set(user)));
+  }
+
+  loginToken(credentials: LoginRequestDto): Observable<TempTokenResponse> {
+    return this.authRepository
+      .loginToken(credentials)
   }
 
   /**
