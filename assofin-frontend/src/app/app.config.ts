@@ -4,7 +4,7 @@ import { routes } from './app.routes';
 import {provideHttpClient, withInterceptors} from '@angular/common/http';
 import {providePrimeNG} from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
-import {APP_CONFIG_VALUE} from '@core/config/app.config';
+import {APP_CONFIG, APP_CONFIG_VALUE} from '@core/config/app.config';
 import {errorInterceptor} from '@core/interceptors/error-interceptor';
 import {MessageService} from 'primeng/api';
 
@@ -15,6 +15,10 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     // 2. Data Network Layer // with error handling interceptor
     provideHttpClient(withInterceptors([errorInterceptor])),
+
+    // 3. ENV integration
+    { provide: APP_CONFIG, useValue: APP_CONFIG_VALUE },
+
 
     // 3. UI Presentation Layer
     MessageService,
