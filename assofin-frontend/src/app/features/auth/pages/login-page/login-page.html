@@ -1,0 +1,11 @@
+<div class="auth-panel">
+  <form class="auth-form">
+    @if (mode() === 'login') {
+      <app-login-form (requestSignup)="showSignup()"  (submitLogin)="onLogin($event)"/>
+    } @else {
+      <app-signup-form (requestLogin)="showLogin()"  />
+    }
+
+  </form>
+  <img class="panel-img" src="/img/auth-side-image2.png" alt="avatar-1">
+</div>
