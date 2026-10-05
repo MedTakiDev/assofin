@@ -20,14 +20,14 @@ application:
       - "DELETE"
       - "OPTIONS"
       - "PATCH"
-      allowed-headers:
+    allowed-headers:
         - "Authorization"
         - "Content-Type"
         - "X-Requested-With"
         - "Accept"
-      exposed-headers:
+    exposed-headers:
         - "Authorization"
-      max-age: 3600
+    max-age: 3600
   security:
     jwt:
       secret-key: ${JWT_SECRET_KEY}
