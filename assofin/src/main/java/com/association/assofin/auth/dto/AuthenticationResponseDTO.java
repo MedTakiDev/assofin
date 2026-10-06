@@ -4,5 +4,6 @@ import lombok.Builder;
 
 @Builder
 public record AuthenticationResponseDTO(
-        String token
+        String token,
+        String message
 ) {}

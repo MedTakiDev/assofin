@@ -9,8 +9,10 @@ import com.association.assofin.mail.EmailTemplateName;
 import com.association.assofin.mail.MailService;
 import com.association.assofin.security.jwt.JwtService;
 import com.association.assofin.user.User;
+import com.association.assofin.user.UserRepository;
 import com.association.assofin.user.UserService;
 import jakarta.mail.MessagingException;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,6 +36,7 @@ public class AuthenticationService {
     private final ActivationTokenService activationTokenService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final UserRepository userRepository;
 
 
     public void register(RegistrationRequestDTO request){
@@ -62,7 +65,7 @@ public class AuthenticationService {
     @Transactional
     public void activateAccount(String activationToken){
         Long userId = activationTokenService.validateToken(activationToken);
-        var user = userService.findById(userId);
+        var user = userRepository.findById(userId).orElseThrow(()->new EntityNotFoundException("User not found"));
         user.setEnabled(true);
         userService.saveUser(user);
         activationTokenService.consumeToken(activationToken);
