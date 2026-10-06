@@ -6,6 +6,7 @@ import {LoginRequestDto} from '../dto/login-request.dto';
 import {UserProfileDto} from '../dto/user-profile.dto';
 import {RegisterRequestDto} from '../dto/register-request.dto';
 import {ApiService} from '@core/services/api.service';
+import {AuthResponseDto} from '@auth/dto/auth-response.dto';
 
 export interface TempTokenResponse {
   token: string;
@@ -27,14 +28,11 @@ export class AuthRepository {
   /**
    * Submits credentials for authentication.
    */
-  login(credentials: LoginRequestDto): Observable<UserProfileDto> {
-    return this.api.post<UserProfileDto>('auth/login', credentials);
+  login(credentials: LoginRequestDto): Observable<AuthResponseDto> {
+    return this.api.post<AuthResponseDto>('auth/login', credentials);
   }
 
 
-  loginToken(credentials: LoginRequestDto): Observable<TempTokenResponse> {
-    return this.api.post<TempTokenResponse>('auth/login', credentials);
-  }
   /**
    * Submits registration details for new account creation.
    */

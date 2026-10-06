@@ -4,6 +4,7 @@ import {AuthRepository, TempTokenResponse} from '../repositories/auth.repository
 import {AppPermission, UserProfileDto} from '../dto/user-profile.dto';
 import {LoginRequestDto} from '../dto/login-request.dto';
 import {RegisterRequestDto} from '../dto/register-request.dto';
+import {AuthResponseDto} from '@auth/dto/auth-response.dto';
 
 
 @Injectable({ providedIn: 'root' })
@@ -49,6 +50,10 @@ export class AuthService {
    * to verify an active session cookie without throwing unhandled exceptions.
    */
   checkSession(): Observable<UserProfileDto | null> {
+    if (this.isInitialized() && this.currentUser()) {
+      return of(this.currentUser());
+    }
+
     return this.authRepository.getSession().pipe(
       tap((user) => {
         this.currentUserSignal.set(user);
@@ -57,6 +62,7 @@ export class AuthService {
       catchError(() => {
         this.currentUserSignal.set(null);
         this.isInitializedSignal.set(true);
+        // Return null observable so callers receive a clean value
         return of(null);
       }),
     );
@@ -65,15 +71,9 @@ export class AuthService {
   /**
    * Imperative Login method. Emits response Observable to component subscribers.
    */
-  login(credentials: LoginRequestDto): Observable<UserProfileDto> {
+  login(credentials: LoginRequestDto): Observable<AuthResponseDto> {
     return this.authRepository
       .login(credentials)
-      .pipe(tap((user) => this.currentUserSignal.set(user)));
-  }
-
-  loginToken(credentials: LoginRequestDto): Observable<TempTokenResponse> {
-    return this.authRepository
-      .loginToken(credentials)
   }
 
   /**

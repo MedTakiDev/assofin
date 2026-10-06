@@ -19,7 +19,7 @@ export const authGuard: CanMatchFn = (route, segments) => {
       }
 
       // Best practice: Return a UrlTree instead of triggering a manual side-effect navigation
-      return router.createUrlTree(['/login']);
+      return router.createUrlTree(['/auth/login']);
     })
   );
 };

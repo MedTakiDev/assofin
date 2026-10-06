@@ -121,6 +121,10 @@ public class AuthenticationController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserProfileResponseDTO> getConnectedUserProfile(Authentication authentication) {
         // Extract user context directly from Spring Security Authentication
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         String username = authentication.getName();
         UserProfileResponseDTO profile = userService.getProfileByUsername(username);
         return ResponseEntity.ok(profile);

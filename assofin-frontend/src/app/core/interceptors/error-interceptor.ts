@@ -19,17 +19,15 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           case 401:
             //'Session expired. Please log in again.', 'error'
             notificationService.show({severity: messageSeverity.error, summary:'Session expired. Please log in again.'});
-            authService.logout().subscribe({
-              complete: () => router.navigateByUrl('/login')
-            });
+            authService.logout();
+            router.createUrlTree(['/auth/login']);
             break;
 
           // 🚫 2. Tampered Security/Unauthorized Page Bounds
           case 403:
             notificationService.show({severity:messageSeverity.error, summary:'Access Denied: Insufficient authorization permissions.'});
-            authService.logout().subscribe({
-              complete: () => router.navigateByUrl('/login')
-            });
+            authService.logout();
+            router.createUrlTree(['/auth/login']);
             break;
 
           // 💥 3. Infrastructure Global Server Crashes
