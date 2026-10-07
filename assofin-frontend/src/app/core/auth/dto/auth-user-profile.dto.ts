@@ -11,7 +11,7 @@ export type AppPermission =
   | 'invoice:approve';
 
 
-export interface UserProfileDto {
+export interface AuthUserProfileDto {
   id: string;
   email: string;
   firstname: string;

@@ -1,7 +1,7 @@
-import { UserProfileDto } from './user-profile.dto';
+import {AuthUserProfileDto} from './auth-user-profile.dto';
 
 export interface AuthResponseDto {
   token: string;
-  user: UserProfileDto | null;
+  user: AuthUserProfileDto | null;
   message: string;
 }

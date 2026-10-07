@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { HttpResourceRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {LoginRequestDto} from '../dto/login-request.dto';
-import {UserProfileDto} from '../dto/user-profile.dto';
+import {AuthUserProfileDto} from '../dto/auth-user-profile.dto';
 import {RegisterRequestDto} from '../dto/register-request.dto';
 import {ApiService} from '@core/services/api.service';
 import {AuthResponseDto} from '@auth/dto/auth-response.dto';
@@ -20,9 +20,9 @@ export class AuthRepository {
   /**
    * Retrieves current active user session profile.
    */
-  getSession(): Observable<UserProfileDto> {
+  getSession(): Observable<AuthUserProfileDto> {
     // Relative path clean of version prefixing
-    return this.api.get<UserProfileDto>('auth/me');
+    return this.api.get<AuthUserProfileDto>('users/me');
   }
 
   /**
@@ -36,8 +36,8 @@ export class AuthRepository {
   /**
    * Submits registration details for new account creation.
    */
-  signup(payload: RegisterRequestDto): Observable<UserProfileDto> {
-    return this.api.post<UserProfileDto>('auth/register', payload);
+  signup(payload: RegisterRequestDto): Observable<AuthUserProfileDto> {
+    return this.api.post<AuthUserProfileDto>('auth/register', payload);
   }
 
   /**

@@ -1,7 +1,7 @@
 import {Injectable, inject, signal, computed, Service} from '@angular/core';
-import { Observable, tap, catchError, of } from 'rxjs';
+import {Observable, tap, catchError, of, throwError} from 'rxjs';
 import {AuthRepository, TempTokenResponse} from '../repositories/auth.repository';
-import {AppPermission, UserProfileDto} from '../dto/user-profile.dto';
+import {AppPermission, AuthUserProfileDto} from '../dto/auth-user-profile.dto';
 import {LoginRequestDto} from '../dto/login-request.dto';
 import {RegisterRequestDto} from '../dto/register-request.dto';
 import {AuthResponseDto} from '@auth/dto/auth-response.dto';
@@ -12,7 +12,7 @@ export class AuthService {
   private readonly authRepository = inject(AuthRepository);
 
   // Core state signals
-  private readonly currentUserSignal = signal<UserProfileDto | null>(null);
+  private readonly currentUserSignal = signal<AuthUserProfileDto | null>(null);
   private readonly isInitializedSignal = signal<boolean>(false);
 
   // Readonly computed signals for global application consumption
@@ -49,21 +49,42 @@ export class AuthService {
    * Called on application boot (e.g. via APP_INITIALIZER or AuthGuard)
    * to verify an active session cookie without throwing unhandled exceptions.
    */
-  checkSession(): Observable<UserProfileDto | null> {
-    if (this.isInitialized() && this.currentUser()) {
+  // ============================================================
+  // Session
+  // ============================================================
+
+  checkSession(): Observable<AuthUserProfileDto | null> {
+    /*
+     * If the application already knows the authenticated user,
+     * don't make another /auth/me request.
+     */
+    if (this.isInitialized()) {
       return of(this.currentUser());
     }
-
+    /*
+     * First authentication check.
+     *
+     * Backend:
+     *
+     * 200 → authenticated
+     * 401 → unauthenticated
+     */
     return this.authRepository.getSession().pipe(
       tap((user) => {
         this.currentUserSignal.set(user);
         this.isInitializedSignal.set(true);
       }),
-      catchError(() => {
-        this.currentUserSignal.set(null);
-        this.isInitializedSignal.set(true);
-        // Return null observable so callers receive a clean value
-        return of(null);
+      catchError((error) => {
+        /*
+         * Authentication failed.
+         *
+         * The backend AuthenticationEntryPoint has already
+         * handled the invalid JWT and cleared the HttpOnly cookie.
+         *
+         * Angular only needs to update its local state.
+         */
+        this.clearSession();
+        return throwError(() => error);
       }),
     );
   }
@@ -71,6 +92,9 @@ export class AuthService {
   /**
    * Imperative Login method. Emits response Observable to component subscribers.
    */
+  // ============================================================
+  // Authentication
+  // ============================================================
   login(credentials: LoginRequestDto): Observable<AuthResponseDto> {
     return this.authRepository
       .login(credentials)
@@ -79,16 +103,45 @@ export class AuthService {
   /**
    * Imperative Signup method. Emits response Observable to component subscribers.
    */
-  signup(payload: RegisterRequestDto): Observable<UserProfileDto> {
+  signup(payload: RegisterRequestDto): Observable<AuthUserProfileDto> {
     return this.authRepository
       .signup(payload)
-      .pipe(tap((user) => this.currentUserSignal.set(user)));
+      .pipe(
+        tap((user) => this.currentUserSignal.set(user))
+      );
   }
 
+  // ============================================================
+  // Explicit logout
+  // ============================================================
+
   /**
-   * Imperative Logout method. Clears client session signal upon success.
+   * Explicit user logout.
+   *
+   * This is different from clearSession().
+   *
+   * logout() → tells backend to invalidate/delete cookie
+   * clearSession() → only clears Angular state
    */
   logout(): Observable<void> {
     return this.authRepository.logout().pipe(tap(() => this.currentUserSignal.set(null)));
+  }
+
+  // ============================================================
+  // Local authentication state
+  // ============================================================
+
+  /**
+   * Clears only the Angular authentication state.
+   *
+   * This does NOT make an HTTP request.
+   *
+   * Used when the backend tells us that the current
+   * authentication is no longer valid.
+   */
+  clearSession(): void {
+
+    this.currentUserSignal.set(null);
+    this.isInitializedSignal.set(true);
   }
 }
