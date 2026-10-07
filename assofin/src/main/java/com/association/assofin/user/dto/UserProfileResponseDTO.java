@@ -1,4 +1,4 @@
-package com.association.assofin.auth.dto;
+package com.association.assofin.user.dto;
 
 import com.association.assofin.role.Role;
 import lombok.Builder;

@@ -3,11 +3,9 @@ package com.association.assofin.auth;
 import com.association.assofin.auth.dto.AuthenticationRequestDTO;
 import com.association.assofin.auth.dto.AuthenticationResponseDTO;
 import com.association.assofin.auth.dto.RegistrationRequestDTO;
-import com.association.assofin.auth.dto.UserProfileResponseDTO;
 import com.association.assofin.user.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.mail.MessagingException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +13,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -111,32 +107,6 @@ public class AuthenticationController {
         authService.activateAccount(token);
         return ResponseEntity.accepted().build();
     }
-
-
-    /**
-     * Endpoint 1: Fetch the currently authenticated user's profile.
-     * Requires only that the user is authenticated.
-     */
-    @GetMapping("/me")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserProfileResponseDTO> getConnectedUserProfile(Authentication authentication) {
-        // Extract user context directly from Spring Security Authentication
-        String username = authentication.getName();
-        UserProfileResponseDTO profile = userService.getProfileByUsername(username);
-        return ResponseEntity.ok(profile);
-    }
-
-    /**
-     * Endpoint 2: Fetch any target user profile by ID.
-     * Requires specific administrative permission 'user:read'.
-     */
-   /* todo implement read user for admins allowed to read the users profile
-    @GetMapping("/{userId}")
-    @PreAuthorize("hasAuthority('user:read')")
-    public ResponseEntity<UserProfileResponseDTO> getUserProfileById(@PathVariable Long userId) {
-        UserProfileResponseDTO profile = userService.getUserProfileById(userId);
-        return ResponseEntity.ok(profile);
-    }*/
 
 
     @PostMapping("/logout")

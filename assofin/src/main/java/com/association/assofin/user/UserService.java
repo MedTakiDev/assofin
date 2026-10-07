@@ -1,14 +1,11 @@
 package com.association.assofin.user;
 
 import com.association.assofin.auth.dto.RegistrationRequestDTO;
-import com.association.assofin.auth.dto.UserProfileResponseDTO;
+import com.association.assofin.user.dto.UserProfileResponseDTO;
 import com.association.assofin.role.RoleEnum;
 import com.association.assofin.role.RoleService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
