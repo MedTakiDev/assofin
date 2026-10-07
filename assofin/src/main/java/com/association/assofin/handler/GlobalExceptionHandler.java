@@ -6,13 +6,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
-import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import javax.naming.AuthenticationException;
-import java.nio.file.AccessDeniedException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -22,30 +19,6 @@ import static org.springframework.http.HttpStatus.*;
 @RestControllerAdvice
 //GlobalExceptionHandler — the central exception interceptor
 public class GlobalExceptionHandler {
-
-    // 🔒 1. Spring Security 6+ Method-level Access Denied (@PreAuthorize failure)
-    @ExceptionHandler({AuthorizationDeniedException.class, AccessDeniedException.class})
-    public ResponseEntity<ExceptionResponse> handleAccessDeniedException(Exception exp) {
-        return ResponseEntity.status(FORBIDDEN).body(
-                ExceptionResponse.builder()
-                        .status(FORBIDDEN.value())
-                        .exceptionDec("Access Denied")
-                        .errorMessage("You do not have permission to access this resource.")
-                        .build()
-        );
-    }
-
-    // 🔒 2. Unauthenticated / Missing Credentials Exception
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ExceptionResponse> handleAuthenticationException(AuthenticationException exp) {
-        return ResponseEntity.status(UNAUTHORIZED).body(
-                ExceptionResponse.builder()
-                        .status(UNAUTHORIZED.value())
-                        .exceptionDec("Authentication Required")
-                        .errorMessage(exp.getMessage())
-                        .build()
-        );
-    }
 
     @ExceptionHandler(LockedException.class)
     public ResponseEntity<ExceptionResponse> handleException(LockedException exp) {

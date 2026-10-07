@@ -18,8 +18,10 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.WebUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
@@ -36,43 +38,65 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-
-        // 1. Extract JWT token from HttpOnly cookie
-        String jwt = null;
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("token".equals(cookie.getName())) {
-                    jwt = cookie.getValue();
-                    break;
-                }
-            }
-        }
-
-        // 2. If no token found, let Spring Security handle unauthorized access
-        if (jwt == null) {
+        // ================================================================
+        // 1. Extract JWT from HttpOnly cookie
+        // ================================================================
+        String jwt = extractTokenFromCookie(request);
+        // ================================================================
+        // 2. No token
+        // ================================================================
+        if (jwt == null || jwt.isBlank()) {
             filterChain.doFilter(request, response);
             return;
         }
+        // ================================================================
+        // 3. Process JWT
+        // ================================================================
+        try {
+            String userEmail =
+                    jwtService.extractUsername(jwt);
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails =userDetailsService.loadUserByUsername(userEmail);
+                if (jwtService.isTokenValid(jwt,userDetails)) {
 
-        // 3. Extract username and populate SecurityContext
-        String userEmail = jwtService.extractUsername(jwt);
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities());
 
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities() // Contains "ROLE_ADMIN", "user:read", etc.
-                );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                // This line makes isAuthenticated() and hasAuthority() evaluation pass!
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
-        }
 
+        } catch (Exception ex) {
+            /*
+             * JWT is invalid, expired, malformed, etc.
+             *
+             * Important:
+             *
+             * DO NOT throw the exception here.
+             *
+             * DO NOT authenticate the user.
+             *
+             * Continue the filter chain.
+             *
+             * If the requested endpoint requires authentication,
+             * Spring Security will invoke AuthenticationEntryPoint
+             * and return 401.
+             */
+            SecurityContextHolder.clearContext();
+        }
+        // ================================================================
+        // 4. Continue filter chain
+        // ================================================================
         filterChain.doFilter(request, response);
+    }
+
+
+    private String extractTokenFromCookie(HttpServletRequest request) {
+        Cookie cookie = WebUtils.getCookie(request, "token");
+        return cookie != null ? cookie.getValue() : null;
     }
 }
