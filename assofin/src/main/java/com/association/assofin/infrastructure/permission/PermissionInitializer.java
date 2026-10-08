@@ -22,10 +22,10 @@ public class PermissionInitializer implements ApplicationRunner {
 
         for (PermissionDefinition permission : permissionRegistry.all()) {
 
-            if (!permissionRepository.existsByName(permission.name())) {
+            if (!permissionRepository.existsByName(permission.value())) {
                 permissionRepository.save(
                         Permission.builder()
-                                .name(permission.name())
+                                .name(permission.value())
                                 .build()
                 );
             }
