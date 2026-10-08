@@ -3,9 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { HttpResourceRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {LoginRequestDto} from '../dto/login-request.dto';
-import {UserProfileDto} from '../dto/user-profile.dto';
+import {AuthUserProfileDto} from '../dto/auth-user-profile.dto';
 import {RegisterRequestDto} from '../dto/register-request.dto';
 import {ApiService} from '@core/services/api.service';
+import {AuthResponseDto} from '@auth/dto/auth-response.dto';
 
 export interface TempTokenResponse {
   token: string;
@@ -19,27 +20,24 @@ export class AuthRepository {
   /**
    * Retrieves current active user session profile.
    */
-  getSession(): Observable<UserProfileDto> {
+  getSession(): Observable<AuthUserProfileDto> {
     // Relative path clean of version prefixing
-    return this.api.get<UserProfileDto>('auth/me');
+    return this.api.get<AuthUserProfileDto>('users/me');
   }
 
   /**
    * Submits credentials for authentication.
    */
-  login(credentials: LoginRequestDto): Observable<UserProfileDto> {
-    return this.api.post<UserProfileDto>('auth/login', credentials);
+  login(credentials: LoginRequestDto): Observable<AuthResponseDto> {
+    return this.api.post<AuthResponseDto>('auth/login', credentials);
   }
 
 
-  loginToken(credentials: LoginRequestDto): Observable<TempTokenResponse> {
-    return this.api.post<TempTokenResponse>('auth/login', credentials);
-  }
   /**
    * Submits registration details for new account creation.
    */
-  signup(payload: RegisterRequestDto): Observable<UserProfileDto> {
-    return this.api.post<UserProfileDto>('auth/register', payload);
+  signup(payload: RegisterRequestDto): Observable<AuthUserProfileDto> {
+    return this.api.post<AuthUserProfileDto>('auth/register', payload);
   }
 
   /**

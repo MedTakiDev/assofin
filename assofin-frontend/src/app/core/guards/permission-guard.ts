@@ -1,7 +1,7 @@
 import {CanMatchFn, Route, Router, UrlSegment} from '@angular/router';
 import {AuthService} from '@auth/services/auth.service';
 import {inject} from '@angular/core';
-import {AppPermission} from '@auth/dto/user-profile.dto';
+import {AppPermission} from '@auth/dto/auth-user-profile.dto';
 /**
  * 🛡️ Enterprise Feature Read Permission Guard
  * @param feature The application domain module being requested (e.g. 'user', 'invoice')

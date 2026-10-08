@@ -1,25 +1,42 @@
 import { CanMatchFn, Router, UrlTree } from '@angular/router';
 import { inject } from '@angular/core';
 import { AuthService } from '@auth/services/auth.service';
-import { map, take } from 'rxjs/operators'; // Ensure correct import path
-import { UserProfileDto } from '@auth/dto/user-profile.dto';
+import { map, take } from 'rxjs/operators';
+import {catchError, of} from 'rxjs'; // Ensure correct import path
 
-export const authGuard: CanMatchFn = (route, segments) => {
+export const authGuard: CanMatchFn = () => {
+
   const authService = inject(AuthService);
   const router = inject(Router);
 
   return authService.checkSession().pipe(
-    take(1),
-    map((userProfile: UserProfileDto|null): boolean | UrlTree => {
-      if (authService.isInitialized() && authService.isAuthenticated()) {
-        return true;
-      }
-      if (userProfile) {
-        return true;
-      }
 
-      // Best practice: Return a UrlTree instead of triggering a manual side-effect navigation
-      return router.createUrlTree(['/login']);
-    })
+    take(1),
+    map((user) => {
+      /*
+       * Authenticated.
+       */
+      if (user) {
+        return true;
+      }
+      /*
+       * No authenticated user.
+       */
+      return router.createUrlTree([
+        '/auth',
+      ]);
+    }),
+    catchError(() => {
+      /*
+       * /auth/me returned 401.
+       *
+       * AuthService has already cleared the
+       * application authentication state.
+       *
+       * This is the ONLY place responsible for
+       * authentication-driven navigation.
+       */
+      return of(router.createUrlTree(['/auth',]),);
+    }),
   );
 };

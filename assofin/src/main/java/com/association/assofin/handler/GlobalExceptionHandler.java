@@ -19,6 +19,7 @@ import static org.springframework.http.HttpStatus.*;
 @RestControllerAdvice
 //GlobalExceptionHandler — the central exception interceptor
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(LockedException.class)
     public ResponseEntity<ExceptionResponse> handleException(LockedException exp) {
         return ResponseEntity.status(UNAUTHORIZED).body(

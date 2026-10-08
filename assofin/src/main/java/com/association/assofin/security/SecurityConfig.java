@@ -31,6 +31,11 @@ public class SecurityConfig {
 
     private final CorsProperties corsProperties;
 
+
+    private final RestAuthenticationEntryPoint authenticationEntryPoint;
+
+    private final RestAccessDeniedHandler accessDeniedHandler;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
@@ -53,9 +58,27 @@ public class SecurityConfig {
                                         "/swagger-ui.html").permitAll()
                                 .anyRequest().authenticated()
                 )
+                // ---------------------------------------------------------
+                // EXCEPTION HANDLING
+                // ---------------------------------------------------------
+                .exceptionHandling(exception ->
+                        exception
+                                .authenticationEntryPoint(authenticationEntryPoint)
+                                .accessDeniedHandler(accessDeniedHandler)
+                )
+
+                // ---------------------------------------------------------
+                // SESSION
+                // ---------------------------------------------------------
                 .sessionManagement((session) -> session.sessionCreationPolicy(STATELESS))
+                // ---------------------------------------------------------
+                // AUTHENTICATION MANAGER
+                // ---------------------------------------------------------
                 //.authenticationProvider(authenticationProvider)//we can use the AuthenticationManager Bean in the bottom to avoid hard coded authentication provider wiring
                 .authenticationManager(authenticationManager)
+                // ---------------------------------------------------------
+                // APPEND JWT FILTER
+                // ---------------------------------------------------------
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
@@ -67,13 +90,13 @@ public class SecurityConfig {
         // Allow Angular origin
         configuration.setAllowedOrigins(corsProperties.getAllowedOrigins());
         // Allow HTTP Methods
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")); // might use the cors properties class to refactor the hard coded section
+        configuration.setAllowedMethods(corsProperties.getAllowedMethods()); // might use the cors properties class to refactor the hard coded section
 
         // Allow headers (Authorization, Content-Type, etc.)
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
+        configuration.setAllowedHeaders(corsProperties.getAllowedHeaders());
 
         // Expose headers to Angular if needed
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setExposedHeaders(corsProperties.getExposedHeaders());
 
         // Allow credentials (cookies / auth headers)
         configuration.setAllowCredentials(true);

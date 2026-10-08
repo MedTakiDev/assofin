@@ -1,29 +1,24 @@
 package com.association.assofin.user;
 
 import com.association.assofin.auth.dto.RegistrationRequestDTO;
+import com.association.assofin.user.dto.UserProfileResponseDTO;
 import com.association.assofin.role.RoleEnum;
 import com.association.assofin.role.RoleService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
-public class UserService implements UserDetailsService {
+public class UserService {
     private final  RoleService roleService;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
 
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
-    }
 
     public User saveUser(RegistrationRequestDTO request) {
         if (userRepository.existsByEmail(request.email())) {
@@ -52,6 +47,39 @@ public class UserService implements UserDetailsService {
     public User findById(long id) {
         return userRepository.findById(id)
                 .orElseThrow(()-> new IllegalArgumentException("User not found"));
+    }
+
+
+
+    @Transactional(readOnly = true)
+    public User getUserEntityByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + email));
+    }
+
+    @Transactional(readOnly = true)
+    public UserProfileResponseDTO getProfileByUsername(String email) {
+        User user = getUserEntityByEmail(email);
+        return UserProfileResponseDTO.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .role(user.getRole())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public UserProfileResponseDTO getUserProfileById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + userId));
+        return UserProfileResponseDTO.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
+                .role(user.getRole())
+                .build();
     }
 }
 

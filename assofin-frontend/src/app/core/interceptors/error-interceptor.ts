@@ -5,54 +5,97 @@ import { catchError, throwError } from 'rxjs';
 import { AuthService } from '@auth/services/auth.service';
 import {messageSeverity, NotificationService} from '@core/services/notification.service';
 
-export const errorInterceptor: HttpInterceptorFn = (req, next) => {
+export const errorInterceptor: HttpInterceptorFn = (req,next,) => {
+
   const authService = inject(AuthService);
-  const router = inject(Router);
   const notificationService = inject(NotificationService);
 
   return next(req).pipe(
     catchError((error: unknown) => {
-      if (error instanceof HttpErrorResponse) {
+      if (!(error instanceof HttpErrorResponse)) {
+        return throwError(() => error);
+      }
+      switch (error.status) {
+        // ======================================================
+        // 400 Bad Request
+        // ======================================================
+        case 400:
+          notificationService.show({
+            severity: messageSeverity.error,
+            summary: 'Invalid request.',
+          });
+          break;
 
-        switch (error.status) {
-          // 🔒 1. Session Expirations (Expired Cookie)
-          case 401:
-            //'Session expired. Please log in again.', 'error'
-            notificationService.show({severity: messageSeverity.error, summary:'Session expired. Please log in again.'});
-            authService.logout().subscribe({
-              complete: () => router.navigateByUrl('/login')
-            });
-            break;
+        // ======================================================
+        // 401 Unauthorized
+        // ======================================================
 
-          // 🚫 2. Tampered Security/Unauthorized Page Bounds
-          case 403:
-            notificationService.show({severity:messageSeverity.error, summary:'Access Denied: Insufficient authorization permissions.'});
-            authService.logout().subscribe({
-              complete: () => router.navigateByUrl('/login')
-            });
-            break;
+        case 401:
 
-          // 💥 3. Infrastructure Global Server Crashes
-          case 500:
-          case 503:
-            notificationService.show({severity:messageSeverity.error, summary:'Internal service failure. Our engineers are investigating.'});
-            break;
+          /*
+           * IMPORTANT:
+           *
+           * Do NOT:
+           *
+           * - navigate
+           * - call /auth/logout
+           * - reload the application
+           *
+           * The interceptor only synchronizes the global
+           * authentication state.
+           *
+           * The AuthGuard is responsible for navigation.
+           */
+          authService.clearSession();
+          break;
+        // ======================================================
+        // 403 Forbidden
+        // ======================================================
+        case 403:
+          notificationService.show({
+            severity: messageSeverity.error,
+            summary:
+              'Access Denied: Insufficient authorization permissions.',
+          });
+          break;
 
-          // 📡 4. Network Loss / Severed Cable Connections
-          case 0:
-            notificationService.show({severity:messageSeverity.warning, summary:'Network error detected. Check your internet connection.'});
-            break;
+        // ======================================================
+        // 500 / 503
+        // ======================================================
+        case 500:
+        case 503:
+          notificationService.show({
+            severity: messageSeverity.error,
+            summary:
+              'Internal service failure. Our engineers are investigating.',
+          });
+          break;
 
-          // 🔄 5. Contextual Fallback (400 Bad Request, 422 Validation Error)
-          default:
-            // Do NOT show a global toast for form field errors.
-            // Pass it straight down the line to the component's subscription observer.
-            return throwError(() => error);
-        }
+        // ======================================================
+        // Network error
+        // ======================================================
+        case 0:
+          notificationService.show({
+            severity: messageSeverity.warning,
+            summary:
+              'Network error detected. Check your internet connection.',
+          });
+          break;
+
+        // ======================================================
+        // Other errors
+        // ======================================================
+        default:
+          break;
       }
 
-      // Stop the error from leaking out to component observers for codes handled above (401, 403, 500)
+      /*
+       * NEVER swallow the error.
+       *
+       * The component/service/repository that initiated
+       * the request should still be able to handle it.
+       */
       return throwError(() => error);
-    })
+    }),
   );
 };
