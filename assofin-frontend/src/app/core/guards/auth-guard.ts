@@ -23,7 +23,7 @@ export const authGuard: CanMatchFn = () => {
        * No authenticated user.
        */
       return router.createUrlTree([
-        '/auth/',
+        '/auth',
       ]);
     }),
     catchError(() => {
@@ -36,7 +36,7 @@ export const authGuard: CanMatchFn = () => {
        * This is the ONLY place responsible for
        * authentication-driven navigation.
        */
-      return of(router.createUrlTree(['/auth/',]),);
+      return of(router.createUrlTree(['/auth',]),);
     }),
   );
 };
