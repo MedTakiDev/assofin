@@ -2,14 +2,12 @@ package com.association.assofin.permission;
 
 import com.association.assofin.role.RolePermission;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
 
+@Builder
 @Getter
 @Setter
 @AllArgsConstructor
@@ -20,7 +18,7 @@ public class Permission {
     @Id
     @GeneratedValue
     private Long id;
-    @Column(unique = true)
+    @Column(nullable = false, unique = true)
     private String name;
 
 
