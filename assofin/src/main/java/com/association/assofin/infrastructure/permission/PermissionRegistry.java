@@ -1,6 +1,6 @@
 package com.association.assofin.infrastructure.permission;
 
-import com.association.assofin.permission.PermissionDefinition;
+import com.association.assofin.permission.entity.PermissionDefinition;
 import com.association.assofin.products.ProductPermissions;
 import com.association.assofin.role.permissions.RolePermissions;
 import org.springframework.stereotype.Component;

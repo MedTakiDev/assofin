@@ -1,6 +1,6 @@
 package com.association.assofin.role.permissions;
 
-import com.association.assofin.permission.PermissionDefinition;
+import com.association.assofin.permission.entity.PermissionDefinition;
 
 public enum RolePermissions implements PermissionDefinition {
 

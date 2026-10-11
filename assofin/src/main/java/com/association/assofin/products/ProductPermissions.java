@@ -1,6 +1,6 @@
 package com.association.assofin.products;
 
-import com.association.assofin.permission.PermissionDefinition;
+import com.association.assofin.permission.entity.PermissionDefinition;
 
 //only for test
 public enum ProductPermissions implements PermissionDefinition {

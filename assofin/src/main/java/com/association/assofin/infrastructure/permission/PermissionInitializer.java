@@ -1,8 +1,8 @@
 package com.association.assofin.infrastructure.permission;
 
-import com.association.assofin.permission.Permission;
-import com.association.assofin.permission.PermissionDefinition;
-import com.association.assofin.permission.PermissionRepository;
+import com.association.assofin.permission.entity.Permission;
+import com.association.assofin.permission.entity.PermissionDefinition;
+import com.association.assofin.permission.repository.PermissionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
