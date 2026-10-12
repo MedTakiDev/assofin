@@ -13,6 +13,14 @@ public enum BusinessErrorCodes {
     ACCOUNT_LOCKED(302, FORBIDDEN, "User account is locked"),
     ACCOUNT_DISABLED(303, FORBIDDEN, "User account is disabled"),
     BAD_CREDENTIALS(304, FORBIDDEN, "Login and / or password is incorrect"),
+    BAD_REQUEST_BUS(305,BAD_REQUEST, "Bad request"),
+    ENTITY_ALREADY_EXISTS(409, CONFLICT, "Entity already exists"),
+    ENTITY_NOT_FOUND(404, NOT_FOUND, "Entity does not exists"),
+    DATA_CONFLICT(410, CONFLICT, "The request conflicts with existing data"),
+    SERVER_ERROR(500,INTERNAL_SERVER_ERROR, "internal server error"),
+
+
+
 
     ;
 
