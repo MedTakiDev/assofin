@@ -1,12 +1,14 @@
 package com.association.assofin.role.controller;
 
-import com.association.assofin.role.entity.Role;
+import com.association.assofin.role.dto.request.UpdateRoleRequestDTO;
+import com.association.assofin.role.dto.response.RolePageResponseDTO;
+import com.association.assofin.role.dto.response.RoleResponseDTO;
 import com.association.assofin.role.dto.request.CreateRoleRequestDTO;
 import com.association.assofin.role.dto.request.RolePageRequestDTO;
 import com.association.assofin.role.service.RoleService;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,26 +22,25 @@ import org.springframework.web.bind.annotation.*;
 public class RoleController {
     private final RoleService roleService;
 
-    @GetMapping("/")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    //@PreAuthorize("hasAuthority(@permissions.roleCreate())") athentication already handled by the jwt filter
-    public ResponseEntity<?> getRoles(@RequestBody @Valid RolePageRequestDTO readRolesDTO) throws MessagingException {
-
-        return ResponseEntity
-                .accepted()
-                .body(roleService.findRolesPage(readRolesDTO));
+    @GetMapping
+    @PreAuthorize("hasAuthority(@permissions.roleRead())")
+    public ResponseEntity<RolePageResponseDTO> getRoles(@Valid @NotNull RolePageRequestDTO request) {
+        return ResponseEntity.ok(roleService.findRolesPage(request));
     }
 
-    @PostMapping("/add")
-    @ResponseStatus(HttpStatus.ACCEPTED)
+    @PostMapping
     @PreAuthorize("hasAuthority(@permissions.roleCreate())")
-    public ResponseEntity<?> create(@RequestBody @Valid CreateRoleRequestDTO request) throws MessagingException {
-        Role role = roleService.save(request);
-        return ResponseEntity
-                .accepted()
-                .body(role);
+    public ResponseEntity<RoleResponseDTO> create(@RequestBody @Valid CreateRoleRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(roleService.save(request));
     }
 
-
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasAuthority(@permissions.roleUpdate())")
+    public ResponseEntity<RoleResponseDTO> updateRole(
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateRoleRequestDTO request
+    ) {
+        return ResponseEntity.ok(roleService.updateRole(id, request));
+    }
 
 }

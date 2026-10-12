@@ -1,9 +1,14 @@
 package com.association.assofin.role.dto.request;
 
-import java.util.List;
+import jakarta.validation.constraints.NotNull;
+
+import java.util.Set;
 
 public record CreateRoleRequestDTO(
+        @NotNull
         String name,
-        List<String> permissions
+
+        @NotNull
+        Set<String> permissions
 ) {
 }
