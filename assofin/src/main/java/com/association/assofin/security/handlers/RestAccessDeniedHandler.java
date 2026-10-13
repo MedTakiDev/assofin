@@ -22,7 +22,7 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
         ExceptionResponse errorResponse = ExceptionResponse.builder()
-                        .status(HttpServletResponse.SC_FORBIDDEN)
+                        .businessCode(HttpServletResponse.SC_FORBIDDEN)
                         .exceptionDec("Access Denied")
                         .errorMessage("You do not have permission to access this resource.")
                         .build();

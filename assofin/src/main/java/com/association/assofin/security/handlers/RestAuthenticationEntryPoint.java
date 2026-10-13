@@ -39,7 +39,7 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.addHeader(HttpHeaders.SET_COOKIE,cookie.toString());
 
         ExceptionResponse errorResponse = ExceptionResponse.builder()
-                        .status(HttpServletResponse.SC_UNAUTHORIZED)
+                        .businessCode(HttpServletResponse.SC_UNAUTHORIZED)
                         .exceptionDec("Authentication Required")
                         .errorMessage("Authentication is required to access this resource.")
                         .build();

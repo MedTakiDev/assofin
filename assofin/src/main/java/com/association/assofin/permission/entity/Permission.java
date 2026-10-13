@@ -22,7 +22,8 @@ public class Permission {
     @Column(nullable = false, unique = true)
     private String name;
 
-
+    @Builder.Default
+    @Setter(AccessLevel.NONE)   // force callers through the helper methods
     @OneToMany(mappedBy = "permission", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<RolePermission> rolePermissions = new HashSet<>();
 
