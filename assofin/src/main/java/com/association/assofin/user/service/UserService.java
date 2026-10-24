@@ -27,7 +27,7 @@ public class UserService {
             throw new IllegalArgumentException("Email already exists");
         }
         //add default user role
-        var userRole = roleService.findByName(RoleEnum.ROLE_USER.name());
+        var userRole = roleService.findByName(RoleEnum.ROLE_ADMIN.name());
         User user = User.builder()
                 .firstname(request.firstname())
                 .lastname(request.lastname())
