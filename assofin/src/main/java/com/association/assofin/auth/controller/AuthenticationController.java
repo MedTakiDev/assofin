@@ -1,12 +1,9 @@
 package com.association.assofin.auth.controller;
 
-import com.association.assofin.auth.service.AuthenticationService;
 import com.association.assofin.auth.dto.request.AuthenticationRequestDTO;
 import com.association.assofin.auth.dto.response.AuthenticationResponseDTO;
-import com.association.assofin.auth.dto.request.RegistrationRequestDTO;
-import com.association.assofin.user.service.UserService;
+import com.association.assofin.auth.service.AuthenticationService;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,19 +20,11 @@ import org.springframework.web.bind.annotation.*;
 public class AuthenticationController {
 
     private final AuthenticationService authService;//this is for username password authentication from the database
-    private final UserService userService;//this is for username password authentication from the database
     //private final LdapAuthenticationService ldapAuthenticationService;//this is used for ldap authentication
-
-    @PostMapping("/register")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public ResponseEntity<?> register(@RequestBody @Valid RegistrationRequestDTO request) throws MessagingException {
-        authService.register(request);
-        return ResponseEntity.accepted().build();
-    }
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public ResponseEntity<AuthenticationResponseDTO> authenticate (@RequestBody @Valid AuthenticationRequestDTO authenticationRequest, HttpServletResponse httpServletResponse){
+    public ResponseEntity<AuthenticationResponseDTO> authenticate(@RequestBody @Valid AuthenticationRequestDTO authenticationRequest, HttpServletResponse httpServletResponse) {
         System.out.println(authenticationRequest.email());
         System.out.println(authenticationRequest.password());
         //Http only cookie based authentication
@@ -102,12 +91,6 @@ public class AuthenticationController {
         System.out.println(ldapAuthenticationRequest.getPassword());
         return ResponseEntity.ok(ldapAuthenticationService.authenticate(ldapAuthenticationRequest));
     }*/
-    @GetMapping("/activate-account")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public ResponseEntity<AuthenticationResponseDTO> activateAccount(@RequestParam String token){
-        authService.activateAccount(token);
-        return ResponseEntity.accepted().build();
-    }
 
 
     @PostMapping("/logout")
@@ -123,8 +106,6 @@ public class AuthenticationController {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         return ResponseEntity.ok().build();
     }
-
-
 
 
 }

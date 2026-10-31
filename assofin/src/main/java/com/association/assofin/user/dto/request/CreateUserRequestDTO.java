@@ -1,11 +1,8 @@
-package com.association.assofin.auth.dto.request;
+package com.association.assofin.user.dto.request;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
-public record RegistrationRequestDTO(
+public record CreateUserRequestDTO(
 
         @NotEmpty(message = "Firstname is mandatory")
         @NotNull(message = "Firstname is mandatory")
@@ -23,5 +20,15 @@ public record RegistrationRequestDTO(
         @NotEmpty(message = "Password is mandatory")
         @NotNull(message = "Password is mandatory")
         @Size(min = 8, message = "Password should be 8 characters long minimum")
-        String password
-) {}
+        String password,
+
+        @NotNull(message = "Role is not set")
+        @Positive
+        Long roleId,
+
+        @NotNull(message = "account enabled is mandatory")
+        boolean enabled
+
+
+) {
+}

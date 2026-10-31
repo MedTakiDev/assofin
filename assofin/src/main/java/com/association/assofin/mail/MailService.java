@@ -14,9 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.springframework.mail.javamail.MimeMessageHelper.MULTIPART_MODE_MIXED;
-
 @Service
 @RequiredArgsConstructor
 public class MailService {
@@ -25,7 +22,7 @@ public class MailService {
 
     private final String FROM = "contacts@avaodessey.com";
 
-
+    //TODO on MailService.sendAccountActivationEmail saying it's unused since 1.4 and will be reused for "account created" or password-reset emails.
     @Async
     public void sendAccountActivationEmail(
             String to,
@@ -33,9 +30,9 @@ public class MailService {
             EmailTemplateName emailTemplateName,
             String confirmationURL,
             /*activationCode used in case we send an activation account code to the user email*/
-            String subject ){
+            String subject) {
         String templateName;
-        if(emailTemplateName == null) {
+        if (emailTemplateName == null) {
             templateName = EmailTemplateName.CONFIRM_EMAIL.name();
         } else {
             templateName = emailTemplateName.getName();
@@ -48,7 +45,7 @@ public class MailService {
                     MimeMessageHelper.MULTIPART_MODE_MIXED,
                     StandardCharsets.UTF_8.name()
             );
-            Map<String,Object> props = new HashMap<>();
+            Map<String, Object> props = new HashMap<>();
             props.put("username", username);
             props.put("confirmation_url", confirmationURL);
             //props.put("activation_code", activationCode);

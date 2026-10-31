@@ -3,13 +3,13 @@ package com.association.assofin.role.service;
 import com.association.assofin.permission.entity.Permission;
 import com.association.assofin.permission.service.PermissionService;
 import com.association.assofin.role.dto.mapper.RoleMapper;
+import com.association.assofin.role.dto.request.CreateRoleRequestDTO;
+import com.association.assofin.role.dto.request.RolePageRequestDTO;
 import com.association.assofin.role.dto.request.UpdateRoleRequestDTO;
+import com.association.assofin.role.dto.response.RolePageResponseDTO;
 import com.association.assofin.role.dto.response.RoleResponseDTO;
 import com.association.assofin.role.entity.Role;
 import com.association.assofin.role.repository.RoleRepository;
-import com.association.assofin.role.dto.request.CreateRoleRequestDTO;
-import com.association.assofin.role.dto.request.RolePageRequestDTO;
-import com.association.assofin.role.dto.response.RolePageResponseDTO;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +19,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +32,12 @@ public class RoleService {
 
     @Transactional(readOnly = true)
     public Role findByName(String name) {
-        return roleRepository.findByName(name).orElseThrow(()-> new EntityNotFoundException("Role with name " + name + " not found"));
+        return roleRepository.findByName(name).orElseThrow(() -> new EntityNotFoundException("Role with name " + name + " not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public Role findById(long id) {
+        return roleRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Role with id: " + id + " not found"));
     }
 
     @Transactional(readOnly = true)
@@ -43,7 +48,7 @@ public class RoleService {
 
 
     @Transactional
-    public RoleResponseDTO  save(CreateRoleRequestDTO request) {
+    public RoleResponseDTO save(CreateRoleRequestDTO request) {
 
         if (roleRepository.existsByName(request.name().trim())) {
             throw new EntityExistsException("Role with name " + request.name() + " already exists");
@@ -54,8 +59,6 @@ public class RoleService {
 
         return roleMapper.toDto(roleRepository.save(role));
     }
-
-
 
 
     @Transactional
