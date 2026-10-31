@@ -27,7 +27,7 @@ public record CreateUserRequestDTO(
         Long roleId,
 
         @NotNull(message = "account enabled is mandatory")
-        boolean enabled
+        Boolean enabled
 
 
 ) {
