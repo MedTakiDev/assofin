@@ -2,6 +2,9 @@ package com.association.assofin.handler;
 
 
 import jakarta.mail.MessagingException;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -24,7 +27,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionResponse> handleException(LockedException exp) {
         return ResponseEntity.status(UNAUTHORIZED).body(
                 ExceptionResponse.builder()
-                        .status(ACCOUNT_LOCKED.getCode())
+                        .businessCode(ACCOUNT_LOCKED.getCode())
                         .exceptionDec(ACCOUNT_LOCKED.getDescription())
                         .errorMessage(exp.getMessage())
                         .build()
@@ -35,7 +38,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionResponse> handleException(DisabledException exp) {
         return ResponseEntity.status(UNAUTHORIZED).body(
                 ExceptionResponse.builder()
-                        .status(ACCOUNT_DISABLED.getCode())
+                        .businessCode(ACCOUNT_DISABLED.getCode())
                         .exceptionDec(ACCOUNT_DISABLED.getDescription())
                         .errorMessage(exp.getMessage())
                         .build()
@@ -46,7 +49,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionResponse> handleException(BadCredentialsException exp) {
         return ResponseEntity.status(UNAUTHORIZED).body(
                 ExceptionResponse.builder()
-                        .status(BAD_CREDENTIALS.getCode())
+                        .businessCode(BAD_CREDENTIALS.getCode())
                         .exceptionDec(BAD_CREDENTIALS.getDescription())
                         .errorMessage(BAD_CREDENTIALS.getDescription())
                         .build()
@@ -57,6 +60,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionResponse> handleException(MessagingException exp) {
         return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(
                 ExceptionResponse.builder()
+                        .businessCode(SERVER_ERROR.getCode())
                         .errorMessage(exp.getMessage())
                         .build()
         );
@@ -74,9 +78,51 @@ public class GlobalExceptionHandler {
                 .status(BAD_REQUEST)
                 .body(
                     ExceptionResponse.builder()
+                            .businessCode(BAD_REQUEST_BUS.getCode())
                             .validationErrors(errors)
-                        .build()
+                            .build()
         );
+    }
+
+    @ExceptionHandler(EntityExistsException.class)
+    public ResponseEntity<ExceptionResponse> handleException(EntityExistsException exp) {
+        //todo implement logging mechanism needed
+        exp.printStackTrace();
+        return ResponseEntity
+                .status(CONFLICT)
+                .body(
+                        ExceptionResponse.builder()
+                                .businessCode(ENTITY_ALREADY_EXISTS.getCode())
+                                .exceptionDec(exp.getMessage())
+                                .errorMessage(exp.getMessage())
+                                .build()
+                );
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ExceptionResponse> handleException(EntityNotFoundException exp) {
+        //todo implement logging mechanism needed
+        exp.printStackTrace();
+        return ResponseEntity
+                .status(NOT_FOUND)
+                .body(
+                        ExceptionResponse.builder()
+                                .businessCode(ENTITY_NOT_FOUND.getCode())
+                                .exceptionDec(exp.getMessage())
+                                .errorMessage(exp.getMessage())
+                                .build()
+                );
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ExceptionResponse> handleException(DataIntegrityViolationException exp) {
+        return ResponseEntity
+                .status(CONFLICT)
+                .body(ExceptionResponse.builder()
+                        .businessCode(DATA_CONFLICT.getCode())
+                        .exceptionDec("Constraint violation")
+                        .errorMessage("The resource already exists or violates a constraint")
+                        .build());
     }
 
     @ExceptionHandler(Exception.class)
@@ -92,5 +138,7 @@ public class GlobalExceptionHandler {
                                 .build()
                 );
     }
+
+
 
 }

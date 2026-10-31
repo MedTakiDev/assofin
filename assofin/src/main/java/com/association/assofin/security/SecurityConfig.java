@@ -1,5 +1,7 @@
 package com.association.assofin.security;
 
+import com.association.assofin.security.handlers.RestAccessDeniedHandler;
+import com.association.assofin.security.handlers.RestAuthenticationEntryPoint;
 import com.association.assofin.security.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -15,9 +17,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
-
-import static org.springframework.security.config.Customizer.withDefaults;
 import static org.springframework.security.config.http.SessionCreationPolicy.*;
 
 @Configuration
