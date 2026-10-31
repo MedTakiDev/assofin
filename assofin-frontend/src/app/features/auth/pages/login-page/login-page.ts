@@ -1,40 +1,22 @@
-import {Component, inject, signal} from '@angular/core';
-import {LoginForm} from '../../components/login-form/login-form';
-import {SignupForm} from '../../components/signup-form/signup-form';
-import {AuthService} from '@auth/services/auth.service';
-import {Router} from '@angular/router';
-import {LoginRequestDto} from '@auth/dto/login-request.dto';
-import {NotificationService} from '@core/services/notification.service';
+import { Component, inject, signal } from '@angular/core';
+import { AuthService } from '@auth/services/auth.service';
+import { Router } from '@angular/router';
+import { LoginRequestDto } from '@auth/dto/login-request.dto';
+import { NotificationService } from '@core/services/notification.service';
 
 @Component({
-  imports: [
-    LoginForm,
-    SignupForm
-  ],
+  imports: [],
   selector: 'app-login-page',
   styleUrl: './login-page.css',
   templateUrl: './login-page.html',
 })
 export class LoginPage {
+  // View state signals
+  isLoading = signal<boolean>(false);
+  errorMessage = signal<string | null>(null);
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
-
-  // View state signals
-  mode = signal<AuthMode>('login');
-  isLoading = signal<boolean>(false);
-  errorMessage = signal<string | null>(null);
-
-
-  showLogin(): void {
-    this.errorMessage.set(null);
-    this.mode.set('login');
-  }
-
-  showSignup(): void {
-    this.errorMessage.set(null);
-    this.mode.set('signup');
-  }
 
   /**
    * Receives credentials from LoginForm child and executes auth request
@@ -48,7 +30,7 @@ export class LoginPage {
       next: (data) => {
         this.isLoading.set(false);
         console.log(data.message);
-        this.router.navigateByUrl('/');//navigate user to the main view
+        this.router.navigateByUrl('/'); //navigate user to the main view
       },
       error: (err) => {
         this.isLoading.set(false);
@@ -58,5 +40,3 @@ export class LoginPage {
     });
   }
 }
-
-export type AuthMode = 'login' | 'signup';

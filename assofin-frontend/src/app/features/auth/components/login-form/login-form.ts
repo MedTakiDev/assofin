@@ -5,9 +5,6 @@ import { InputIcon } from 'primeng/inputicon';
 import { InputPassword } from 'primeng/inputpassword';
 import { InputText } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
-import { Eye } from '@primeicons/angular/eye';
-import { EyeSlash } from '@primeicons/angular/eye-slash';
-import { User } from '@primeicons/angular/user';
 import { LoginRequestDto } from '@auth/dto/login-request.dto';
 
 @Component({
@@ -18,24 +15,16 @@ import { LoginRequestDto } from '@auth/dto/login-request.dto';
     InputPassword,
     ReactiveFormsModule, // <-- Added ReactiveFormsModule (Removed FormsModule)
     InputText,
-    User,
-    Eye,
-    EyeSlash,
     ButtonModule,
   ],
   styleUrl: './login-form.css',
   templateUrl: './login-form.html',
 })
 export class LoginForm {
-  private readonly fb = inject(FormBuilder);
-
   // UI state signals
   mask = signal<boolean>(true);
-
-  // Component Outputs
-  requestSignup = output<void>();
   submitLogin = output<LoginRequestDto>();
-
+  private readonly fb = inject(FormBuilder);
   // Reactive Form Definition
   loginForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],

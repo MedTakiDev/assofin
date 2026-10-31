@@ -1,11 +1,9 @@
-import {Injectable, inject, signal, computed, Service} from '@angular/core';
-import {Observable, tap, catchError, of, throwError} from 'rxjs';
-import {AuthRepository, TempTokenResponse} from '../repositories/auth.repository';
-import {AppPermission, AuthUserProfileDto} from '../dto/auth-user-profile.dto';
-import {LoginRequestDto} from '../dto/login-request.dto';
-import {RegisterRequestDto} from '../dto/register-request.dto';
-import {AuthResponseDto} from '@auth/dto/auth-response.dto';
-
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { catchError, Observable, of, tap, throwError } from 'rxjs';
+import { AuthRepository } from '../repositories/auth.repository';
+import { AppPermission, AuthUserProfileDto } from '../dto/auth-user-profile.dto';
+import { LoginRequestDto } from '../dto/login-request.dto';
+import { AuthResponseDto } from '@auth/dto/auth-response.dto';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -13,11 +11,10 @@ export class AuthService {
 
   // Core state signals
   private readonly currentUserSignal = signal<AuthUserProfileDto | null>(null);
-  private readonly isInitializedSignal = signal<boolean>(false);
-
   // Readonly computed signals for global application consumption
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly isAuthenticated = computed(() => !!this.currentUserSignal());
+  private readonly isInitializedSignal = signal<boolean>(false);
   readonly isInitialized = this.isInitializedSignal.asReadonly();
 
   // Add this method inside your existing Injectable AuthService class
@@ -42,7 +39,7 @@ export class AuthService {
       return false;
     }
 
-    return requiredPermissions.some(permission => user.role.permissions.includes(permission));
+    return requiredPermissions.some((permission) => user.role.permissions.includes(permission));
   }
 
   /**
@@ -96,19 +93,7 @@ export class AuthService {
   // Authentication
   // ============================================================
   login(credentials: LoginRequestDto): Observable<AuthResponseDto> {
-    return this.authRepository
-      .login(credentials)
-  }
-
-  /**
-   * Imperative Signup method. Emits response Observable to component subscribers.
-   */
-  signup(payload: RegisterRequestDto): Observable<AuthUserProfileDto> {
-    return this.authRepository
-      .signup(payload)
-      .pipe(
-        tap((user) => this.currentUserSignal.set(user))
-      );
+    return this.authRepository.login(credentials);
   }
 
   // ============================================================
@@ -140,7 +125,6 @@ export class AuthService {
    * authentication is no longer valid.
    */
   clearSession(): void {
-
     this.currentUserSignal.set(null);
     this.isInitializedSignal.set(true);
   }

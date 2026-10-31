@@ -1,12 +1,9 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { HttpResourceRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import {LoginRequestDto} from '../dto/login-request.dto';
-import {AuthUserProfileDto} from '../dto/auth-user-profile.dto';
-import {RegisterRequestDto} from '../dto/register-request.dto';
-import {ApiService} from '@core/services/api.service';
-import {AuthResponseDto} from '@auth/dto/auth-response.dto';
+import { LoginRequestDto } from '../dto/login-request.dto';
+import { AuthUserProfileDto } from '../dto/auth-user-profile.dto';
+import { ApiService } from '@core/services/api.service';
+import { AuthResponseDto } from '@auth/dto/auth-response.dto';
 
 export interface TempTokenResponse {
   token: string;
@@ -32,19 +29,10 @@ export class AuthRepository {
     return this.api.post<AuthResponseDto>('auth/login', credentials);
   }
 
-
-  /**
-   * Submits registration details for new account creation.
-   */
-  signup(payload: RegisterRequestDto): Observable<AuthUserProfileDto> {
-    return this.api.post<AuthUserProfileDto>('auth/register', payload);
-  }
-
   /**
    * Terminates active session on the backend.
    */
   logout(): Observable<void> {
     return this.api.post<void>('auth/logout', {});
   }
-
 }
