@@ -1,0 +1,23 @@
+# ==============================================================================
+# TEST PROFILE (used with @ActiveProfiles("test") + TestcontainersConfiguration)
+# The datasource comes from the Testcontainers @ServiceConnection, not from here.
+# Every value below is a test-only fixture, never a real secret.
+# ==============================================================================
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  mail:
+    host: localhost
+    port: 1025
+
+application:
+  security:
+    jwt:
+      # Base64 of a 32-byte test-only key
+      secret-key: dGVzdC1vbmx5LWp3dC1zZWNyZXQta2V5LTMyLWJ5dGVzISE=
+      expiration: 3600000
+  bootstrap:
+    admin:
+      email: Admin@Test.Local
+      password: test-admin-password

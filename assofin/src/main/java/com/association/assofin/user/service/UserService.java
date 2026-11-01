@@ -50,14 +50,9 @@ public class UserService {
 
 
     @Transactional(readOnly = true)
-    public User getUserEntityByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + email));
-    }
-
-    @Transactional(readOnly = true)
     public UserProfileResponseDTO getProfileByUsername(String email) {
-        User user = getUserEntityByEmail(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with email: " + email));
         return UserProfileResponseDTO.builder()
                 .id(user.getId())
                 .email(user.getEmail())
