@@ -25,8 +25,6 @@ public class AuthenticationController {
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ResponseEntity<AuthenticationResponseDTO> authenticate(@RequestBody @Valid AuthenticationRequestDTO authenticationRequest, HttpServletResponse httpServletResponse) {
-        System.out.println(authenticationRequest.email());
-        System.out.println(authenticationRequest.password());
         //Http only cookie based authentication
         AuthenticationResponseDTO response = authService.authenticate(authenticationRequest);
 
@@ -52,8 +50,6 @@ public class AuthenticationController {
                 .body(safeResponse);
         //old implementation return the token within the authentication response
         /*
-        System.out.println(authenticationRequest.email());
-        System.out.println(authenticationRequest.password());
         //TODO: check the user authentication then retrieve the user authorities from the database
         return ResponseEntity.ok(authService.authenticate(authenticationRequest));
         */

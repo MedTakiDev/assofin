@@ -25,7 +25,6 @@ export class LoginPage {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    console.log(credentials);
     this.authService.login(credentials).subscribe({
       next: (data) => {
         this.isLoading.set(false);

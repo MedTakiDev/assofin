@@ -77,6 +77,7 @@ Severity: 🔴 Critical (security hole or broken main flow) · 🟠 High · 🟡
 | [CFG-04](#cfg-04) | 🟡 | Hard-coded sender/subject from another project, CORS placeholder origin, context-path trailing slash |
 | [CFG-05](#cfg-05) | 🟡 | `pom.xml`: both springdoc **webmvc and webflux** starters; empty metadata placeholders; no quality plugins |
 | [OPS-01](#ops-01) | 🟠 | No Dockerfiles, no CI pipeline, no Actuator/health, no structured logging, no root README |
+| [LOG-01](#log-01) | 🟠 | No logging strategy: SLF4J + structured logs, correlation id, audit trail, frontend `LoggerService`, `no-console` / ArchUnit / Checkstyle guardrails (remaining SEC-02 scope) |
 | [TST-01](#tst-01) | 🟠 | Essentially zero tests; the only test needs live infra |
 | [HYG-01](#hyg-01) | 🔵 | Commented-out code, unused classes/imports/fields, `printStackTrace`, TODOs, typos |
 | [FE-01](#fe-01) | 🔴 | Login loop: session state cached as "unauthenticated" and never refreshed after login |
@@ -412,6 +413,9 @@ Do not change unrelated code. Explain the change in the commit message.
 
 <a id="sec-02"></a>
 ### SEC-02 🔴 Plain-text credentials logged
+
+> 🟡 **Partially resolved on `admin-bootstrap-user-provisioning`.** The credential prints in `AuthenticationController.authenticate` (and the same prints in its commented-out old implementation), the `console.log` calls in `login-form.ts` (`signIn`) and `login-page.ts` (`onLogin`), and the `printStackTrace()` calls in `GlobalExceptionHandler` are removed. **Still open, moved to [LOG-01](#log-01):** introducing SLF4J project-wide, masked login audit events with the client IP, the frontend `LoggerService`, and the ESLint `no-console` / ArchUnit / Checkstyle guardrails. Leftovers LOG-01 also covers: `System.out.println(...getPassword())` in the commented LDAP block (`AuthenticationController:86-87`), `console.log(data.message)` in `login-page.ts:31`, `console.error` in `api.service.ts:59`, and `GlobalExceptionHandler` now logging nothing at all for unexpected errors.
+
 **Where:** `AuthenticationController.java:39-40` (`System.out.println(email/password)`), `login-form.ts:59` (`console.log('Sending payload:', …)`), `login-page.ts:46,50`.
 **Problem:** Passwords end up in server stdout and container logs (shipped to log aggregators) and in the browser console.
 
@@ -1173,6 +1177,7 @@ Clean up assofin/pom.xml:
 
 <a id="ops-01"></a>
 ### OPS-01 🟠 No delivery or operations foundation
+> ℹ️ Item 3 (logging and correlation id) is covered in detail by [LOG-01](#log-01). Do it there, not here.
 **Problem:** No Dockerfiles, no CI, no Actuator (health/readiness/metrics), no structured logging or correlation id, no root README explaining setup, no OpenAPI metadata (title, security scheme for the cookie), no graceful shutdown settings.
 
 **Prompt:**
@@ -1193,6 +1198,181 @@ Add the operational baseline expected from an enterprise boilerplate:
 6. Root README.md: architecture overview, prerequisites, how to run dev (compose + backend + frontend),
    env var reference, how to add a new domain (permissions, routes), testing, deployment.
 7. OpenAPI: an @OpenAPIDefinition with title/version and a cookie-based security scheme.
+```
+
+---
+
+<a id="log-01"></a>
+### LOG-01 🟠 No logging strategy: backend logging, frontend logging, audit trail and regression guardrails
+**Origin:** the remaining scope of [SEC-02](#sec-02). SEC-02 is about *removing* credential prints; LOG-01 is about *replacing* them with a real logging design and making sure they can't come back. It also takes over the logging and correlation-id part of [OPS-01](#ops-01) (item 3).
+**Where (current state):**
+- Backend: only the three bootstrap initializers use `@Slf4j`. Everything else has no logger.
+- `GlobalExceptionHandler`: the `printStackTrace()` calls are gone (SEC-02), but nothing replaced them. Unexpected 500s now **leave no trace at all**, which is worse for operations than before. The `//todo implement logging mechanism needed` comments are still there.
+- `AuthenticationController:86-87`: `System.out.println(...getPassword())` still sits inside the commented-out LDAP block. A single uncomment brings the leak back, and neither the compiler nor ArchUnit can see it.
+- Java `record` DTOs (`AuthenticationRequestDTO`, `CreateUserRequestDTO`) generate a `toString()` that prints **every** field, password included. One `log.debug("{}", request)` leaks the credential.
+- Frontend: `console.error` in `core/services/api.service.ts:59` and `main.ts:6`, `console.log(data.message)` in `login-page.ts:31`. `LoggerService` is an empty class. There is no ESLint at all (see [FE-08](#fe-08)), so `no-console` can't be enforced yet.
+- No log format per profile, no correlation id, no audit trail for authentication or administrative actions, no rule that stops `System.out` / `console.log` from coming back.
+
+**Problem:** logging is either missing (no diagnostics for 5xx, no audit trail) or unsafe (raw stdout, browser console, DTOs that print secrets). In an enterprise setting logs are shipped to an aggregator (ELK, Loki, Datadog), kept for months and read by many people, so they have to be **useful, structured, correlated and free of secrets**. Without automated guardrails, the next feature will bring `System.out` back.
+
+**Target design (what "done" looks like):**
+
+| Concern | Backend | Frontend |
+|---|---|---|
+| API | SLF4J 2 + Logback (Boot default) through Lombok `@Slf4j`. No `System.out`/`err`, no `printStackTrace`, no `java.util.logging`. | A single `LoggerService` with `debug/info/warn/error`. No direct `console.*` outside the console sink. |
+| Format | `dev`: human-readable console pattern. `prod`: JSON through Spring Boot native structured logging (`logging.structured.format.console=ecs`), no extra dependency. | `dev`: browser console. `prod`: `debug`/`info` disabled, `warn`/`error` go to pluggable sinks (console by default; a remote sink such as Sentry or a `/client-logs` endpoint can be added later without touching call sites). |
+| Correlation | A filter assigns an `X-Request-Id` (it accepts a valid incoming one, otherwise generates a UUID), puts it in MDC as `requestId`, returns it as a response header and includes it in error bodies ([ERR-01](#err-01)). After authentication the MDC also gets `userId` (the id, never the email). The MDC is cleared in `finally`. | An interceptor sends an `X-Request-Id` on every call and logs it with every HTTP error, so a support ticket can be matched to the backend log line. |
+| Levels | `ERROR`: unexpected failure, stack trace logged **once**, at the global handler. `WARN`: handled security-relevant events (403, login failure, locked account). `INFO`: lifecycle and business events. `DEBUG`: diagnostics, off in prod. Expected 4xx business exceptions: `DEBUG`/`INFO`, **no** stack trace. Never log-and-rethrow. | `error`: uncaught errors (global `ErrorHandler`) and 5xx/0 HTTP failures. `warn`: handled 4xx. `debug`: dev diagnostics. |
+| Secrets | Never log passwords, JWTs, the `token` cookie, `Authorization`/`Cookie` headers, the bootstrap admin password (`ADMIN_PASSWORD`), or request bodies of `/auth/**` and `POST /users`. Sensitive record DTOs override `toString()` to redact secrets. Emails are masked (`j***@domain.com`) through one `LogSanitizer` utility that also strips CR/LF from user-controlled values (log injection, CWE-117). | Never log form values, credentials, auth responses or full `HttpErrorResponse` bodies. Log status, method, URL path (no query string) and `requestId`. |
+| Audit | A dedicated `AUDIT` logger (`LoggerFactory.getLogger("AUDIT")`) with SLF4J 2 key/value pairs (`event`, `outcome`, `actorId`, `targetId`, `maskedEmail`, `clientIp`, `requestId`). Login events come from Spring Security `AuthenticationSuccessEvent` / `AbstractAuthenticationFailureEvent` `@EventListener`s, not from code in the controller. | — |
+| Guardrails | An ArchUnit test (no standard streams, no `java.util.logging`, no `printStackTrace`) **and** a Checkstyle regex rule that also scans comments, so commented-out prints fail the build too. | ESLint `"no-console": "error"`, turned off only for the console sink file and `main.ts`. |
+
+**Events to audit:**
+- `LOGIN_SUCCESS` / `LOGIN_FAILURE` (with the reason category: `BAD_CREDENTIALS`, `LOCKED`, `DISABLED`), `LOGOUT`, `ACCESS_DENIED`.
+- Admin-provisioning approach: `BOOTSTRAP_ADMIN_CREATED` (replace the current `Bootstrap admin created: <email>` line with a masked email), `USER_CREATED` (actor id, new user id, role name), and later `USER_UPDATED`, `USER_DELETED`, `ROLE_PERMISSIONS_CHANGED` as those endpoints arrive.
+
+
+**Prompt:**
+```
+Context: Spring Boot 4 / Java 21 backend in assofin/ (base package com.association.assofin, Lombok
+available), Angular 22 frontend in assofin-frontend/. SEC-02 already removed the credential prints
+from AuthenticationController.authenticate, login-form.ts and login-page.ts, and removed
+printStackTrace from GlobalExceptionHandler. Now introduce an enterprise-grade logging design and
+guardrails. Delete leftovers rather than commenting them out. Do not change business behavior.
+Account approach: closed registration. The admin is bootstrapped at startup and accounts are created
+through POST /users (Phase 1). There is no self-registration, activation or Redis any more.
+
+BACKEND
+1. Logging API and configuration
+   - Use SLF4J through Lombok @Slf4j everywhere. Add lombok.config at assofin/ with
+     `lombok.log.fieldName = log` and `config.stopBubbling = true`.
+   - application.yml: logging.level.root=INFO, logging.level.com.association.assofin=INFO.
+     application-dev.yml: com.association.assofin=DEBUG and a readable console pattern that includes
+     %X{requestId}. application-prod.yml: logging.structured.format.console=ecs (Spring Boot native
+     structured logging; do not add logstash-logback-encoder), and Hibernate SQL / show-sql off.
+   - Add a logback-spring.xml only if the yml settings above cannot do the job; say why if you do.
+
+2. Correlation id
+   - Create infrastructure/logging/RequestCorrelationFilter (OncePerRequestFilter, ordered before
+     the Spring Security filter chain). It reads X-Request-Id; if the value is missing or isn't a
+     UUID/[A-Za-z0-9-]{8,64}, it generates a UUID. It puts the value into MDC "requestId", sets the
+     X-Request-Id response header, and clears the MDC in finally.
+   - After authentication succeeds in the JWT filter, put the user's id (never the email) into MDC
+     "userId"; it is cleared in the same finally block.
+   - Expose X-Request-Id in the CORS exposedHeaders so the frontend can read it.
+   - Add the requestId to every error body produced by GlobalExceptionHandler, so users can quote it.
+
+3. Sanitization (infrastructure/logging/LogSanitizer, final utility class + unit tests)
+   - maskEmail("john.doe@domain.com") -> "j***@domain.com"; null/blank/invalid -> "***".
+   - sanitize(String) strips \r and \n (log injection, CWE-117) and truncates to 200 chars.
+   - Override toString() in every record DTO that carries a secret (AuthenticationRequestDTO, CreateUserRequestDTO, and any later password-change DTO)
+     to print "***" instead of the secret. Add a unit test per DTO asserting the raw password never
+     appears in toString().
+
+4. Exception logging (GlobalExceptionHandler; add @Slf4j and remove the "todo logging" comments)
+   - Exception.class (unexpected): log.error("Unhandled exception [requestId={}]", ..., exp) with
+     the stack trace, exactly once. Never log-and-rethrow anywhere else.
+   - Business / 4xx exceptions (EntityNotFound, EntityExists, validation, BadCredentials, Locked,
+     Disabled): log at DEBUG (INFO for security-relevant ones) with no stack trace. Never log the
+     rejected values of validation errors on password fields.
+   - AccessDeniedException / the custom AccessDeniedHandler and AuthenticationEntryPoint: WARN
+     with method, path, userId (if any). No stack trace.
+
+5. Audit trail (infrastructure/logging/audit)
+   - AuditLogger component wrapping LoggerFactory.getLogger("AUDIT"), using the SLF4J 2 fluent API:
+     log.atInfo().addKeyValue("event", ...).addKeyValue("outcome", ...)...log("...").
+     Fields: event, outcome (SUCCESS/FAILURE), actorId, targetId, maskedEmail, clientIp, requestId,
+     reason (failure category only).
+   - AuthenticationAuditListener with @EventListener for AuthenticationSuccessEvent and
+     AbstractAuthenticationFailureEvent (make sure an AuthenticationEventPublisher bean is
+     registered so the events fire). Log LOGIN_SUCCESS (INFO) and LOGIN_FAILURE (WARN) with the
+     masked email and the client IP. The failure reason is a category (BAD_CREDENTIALS, LOCKED,
+     DISABLED), never the submitted password, and the HTTP response stays generic.
+   - Client IP: HttpServletRequest.getRemoteAddr(). Set server.forward-headers-strategy=framework
+     (prod) so a trusted proxy's X-Forwarded-For is honored; never parse X-Forwarded-For by hand.
+   - Also audit: LOGOUT, ACCESS_DENIED, BOOTSTRAP_ADMIN_CREATED (AdminUserInitializer: replace the
+     "Bootstrap admin created: <email>" log with an audit event using the masked email),
+     USER_CREATED (UserService.createUser: actorId, new user id, role name; never the request DTO),
+     and ROLE create/update/delete in RoleService (actorId, role id, permission names).
+
+6. Cleanup
+   - Delete the commented-out LDAP block in AuthenticationController (it still contains
+     System.out.println(...getPassword())), and any other commented code containing System.out,
+     printStackTrace or credentials.
+   - Replace every remaining System.out / System.err / printStackTrace in src/main and src/test
+     with the logger (tests may use assertions instead of prints).
+
+7. Guardrails (so this can't regress)
+   - Add com.tngtech.archunit:archunit-junit5 (test scope) and an ArchitectureTest with:
+       GeneralCodingRules.NO_CLASSES_SHOULD_ACCESS_STANDARD_STREAMS,
+       GeneralCodingRules.NO_CLASSES_SHOULD_USE_JAVA_UTIL_LOGGING,
+       a custom rule: no classes should call method Throwable.printStackTrace(),
+       a custom rule: Logger fields are private static final (what Lombok @Slf4j generates).
+   - Add maven-checkstyle-plugin bound to the validate phase (failOnViolation=true,
+     includeTestSourceDirectory=true) with config/checkstyle/checkstyle.xml holding ONLY these rules
+     for now (no full Google style, to avoid noise):
+       RegexpSinglelineJava format "System\.(out|err)\." ignoreComments=false
+       RegexpSinglelineJava format "\.printStackTrace\(" ignoreComments=false
+     ignoreComments=false is intentional: ArchUnit checks bytecode and can't see commented-out
+     prints; Checkstyle can.
+
+8. Backend tests
+   - Using @ExtendWith(OutputCaptureExtension.class) + @SpringBootTest (Testcontainers Postgres):
+     a failed and a successful POST /auth/login and a POST /users produce LOGIN_FAILURE/LOGIN_SUCCESS
+     audit lines, and the captured output never contains the submitted password, the JWT value or
+     the full email.
+   - The response of any request carries X-Request-Id; a valid incoming X-Request-Id is echoed back;
+     an error body contains the same requestId.
+   - A forced unexpected exception produces exactly one ERROR line with a stack trace.
+
+FRONTEND
+9. Tooling prerequisite (part of FE-08): run `ng add angular-eslint`, add "lint": "ng lint" to
+   package.json.
+10. LoggerService (src/app/core/services/logger.service.ts, providedIn root)
+   - Levels debug < info < warn < error. The minimum level comes from the environment
+     (NG_APP_LOG_LEVEL via @ngx-env, default "debug" in dev, "warn" in prod) and isDevMode().
+   - Output goes through an InjectionToken<LogSink[]> LOG_SINKS (multi). Ship ConsoleLogSink
+     (the ONLY file allowed to use console.*). Keep the token so a remote sink (Sentry, or a future
+     POST /client-logs endpoint) can be plugged in later; don't build the remote sink now.
+   - Every entry has: level, message, context (string), timestamp, requestId (if known), and an
+     optional sanitized data object. A sanitize step drops keys matching
+     /password|token|secret|authorization|cookie/i, recursively.
+11. Global error handling
+   - Provide a custom ErrorHandler (GlobalErrorHandler) that logs uncaught errors through
+     LoggerService.error. Keep provideBrowserGlobalErrorListeners().
+   - Add a correlation interceptor that sets X-Request-Id (crypto.randomUUID()) on every API call.
+     The error interceptor / ApiService logs HTTP errors as: method, URL path without query string,
+     status, requestId (from the response header, or the one sent). Never the request body.
+     5xx/0 -> error, 4xx -> warn.
+12. Replace console usage
+   - core/services/api.service.ts:59 -> logger.error(...) with the safe fields above.
+   - features/auth/pages/login-page/login-page.ts:31 -> remove (use the notification service for
+     user-facing messages, not logs).
+   - main.ts:6 runs before Angular DI exists: keep console.error there, with an
+     `// eslint-disable-next-line no-console -- bootstrap failure, DI not available` comment.
+13. ESLint guardrail (eslint.config.js)
+   - "no-console": "error" for src/**/*.ts.
+   - An override that turns it off only for src/app/core/logging/console-log.sink.ts (or wherever
+     ConsoleLogSink lives) and src/main.ts.
+14. Frontend tests (Vitest/Karma, whichever the project uses)
+   - LoggerService: debug/info are dropped at level "warn"; sensitive keys are removed from data;
+     sinks receive the entry.
+   - GlobalErrorHandler forwards to LoggerService.error.
+   - Correlation interceptor sets X-Request-Id.
+
+VERIFICATION
+   - grep -rnE "System\.(out|err)|printStackTrace" assofin/src -> no results (comments included).
+   - grep -rnE "console\.(log|debug|info|warn|error)" assofin-frontend/src -> only the console sink
+     and main.ts.
+   - cd assofin && ./mvnw -q verify passes, including ArchitectureTest and Checkstyle.
+     Temporarily adding System.out.println("x") anywhere fails the build (try it, then revert).
+   - cd assofin-frontend && npm run lint && npm test && npm run build pass. Temporarily adding
+     console.log("x") to a component fails lint (try it, then revert).
+   - Run the app with the prod profile: logs are JSON, each line has requestId, a login produces one
+     AUDIT line with a masked email, and no password/JWT appears anywhere.
+Split into commits: "add backend logging, correlation id and audit trail",
+"forbid System.out and printStackTrace with ArchUnit and Checkstyle",
+"add frontend LoggerService, global error handler and no-console lint rule".
 ```
 
 ---
@@ -1444,5 +1624,6 @@ Harden frontend tooling:
 5. **Make it operable:** [OPS-01](#ops-01), [SEC-06](#sec-06) (login only), [SEC-07](#sec-07), [SEC-09](#sec-09), [PER-02](#per-02), [PER-03](#per-03), [PER-04](#per-04)
 6. **Polish:** [HYG-01](#hyg-01), [FE-07](#fe-07), [FE-08](#fe-08), [ARC-04](#arc-04), [SEC-08](#sec-08)
 7. **Only if email features return:** [BUG-06](#bug-06), [BUG-07](#bug-07), [ARC-03](#arc-03)
+8. **Logging and audit (after Phase 1 and steps 1 to 6 are done):** [LOG-01](#log-01). It finishes [SEC-02](#sec-02) and replaces item 3 of [OPS-01](#ops-01). It comes last on purpose: by then the user-management endpoints, the error contract ([ERR-01](#err-01)) and ESLint ([FE-08](#fe-08)) exist, so the audit events, the `requestId` in error bodies and the `no-console` rule have stable code to attach to.
 
 Once Phase 1 and steps 1 to 4 are done, this would reasonably score **7.5 to 8 / 10** as an enterprise starter. Step 5 is what moves it to "production-grade platform template".

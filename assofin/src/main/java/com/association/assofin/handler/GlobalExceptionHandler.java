@@ -77,17 +77,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(BAD_REQUEST)
                 .body(
-                    ExceptionResponse.builder()
-                            .businessCode(BAD_REQUEST_BUS.getCode())
-                            .validationErrors(errors)
-                            .build()
-        );
+                        ExceptionResponse.builder()
+                                .businessCode(BAD_REQUEST_BUS.getCode())
+                                .validationErrors(errors)
+                                .build()
+                );
     }
 
     @ExceptionHandler(EntityExistsException.class)
     public ResponseEntity<ExceptionResponse> handleException(EntityExistsException exp) {
         //todo implement logging mechanism needed
-        exp.printStackTrace();
         return ResponseEntity
                 .status(CONFLICT)
                 .body(
@@ -102,7 +101,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ExceptionResponse> handleException(EntityNotFoundException exp) {
         //todo implement logging mechanism needed
-        exp.printStackTrace();
         return ResponseEntity
                 .status(NOT_FOUND)
                 .body(
@@ -128,7 +126,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ExceptionResponse> handleException(Exception exp) {
         //todo implement logging mechanism needed
-        exp.printStackTrace();
         return ResponseEntity
                 .status(INTERNAL_SERVER_ERROR)
                 .body(
@@ -138,7 +135,6 @@ public class GlobalExceptionHandler {
                                 .build()
                 );
     }
-
 
 
 }
