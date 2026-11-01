@@ -32,6 +32,15 @@ application:
     jwt:
       secret-key: ${JWT_SECRET_KEY}
       expiration: ${JWT_EXPIRATION_MS}
+  # Default administrator, created at startup only while no user holds the ADMIN role.
+  # Empty defaults keep startup working once an admin exists; if no admin exists and these are
+  # empty, AdminUserInitializer stops the application with an explicit message.
+  bootstrap:
+    admin:
+      email: ${ADMIN_EMAIL:}
+      password: ${ADMIN_PASSWORD:}
+      firstname: ${ADMIN_FIRSTNAME:System}
+      lastname: ${ADMIN_LASTNAME:Administrator}
 
 server:
   servlet:

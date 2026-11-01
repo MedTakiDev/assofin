@@ -8,6 +8,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -57,5 +58,28 @@ public class Role {
                 .filter(p -> !existing.contains(p))
                 .map(p -> RolePermission.builder().role(this).permission(p).build())
                 .forEach(rolePermissions::add);
+    }
+
+    /**
+     * Adds the given permissions that this role does not hold yet. Never removes a grant.
+     * <p>
+     * Used by the startup bootstrap for ADMIN: a permission added in code later reaches the admin on
+     * the next start, while extra grants made by hand are left untouched. Comparison is done on the
+     * permission <b>name</b> (unique), not on {@code Permission.equals}, because the linked permission
+     * can be a Hibernate proxy whose class differs from the loaded entity.
+     *
+     * @return how many permissions were newly granted
+     */
+    public int grantPermissions(Collection<Permission> permissions) {
+        Set<String> alreadyGranted = rolePermissions.stream()
+                .map(rolePermission -> rolePermission.getPermission().getName())
+                .collect(Collectors.toSet());
+
+        int before = rolePermissions.size();
+        permissions.stream()
+                .filter(permission -> alreadyGranted.add(permission.getName()))
+                .map(permission -> RolePermission.builder().role(this).permission(permission).build())
+                .forEach(rolePermissions::add);
+        return rolePermissions.size() - before;
     }
 }
