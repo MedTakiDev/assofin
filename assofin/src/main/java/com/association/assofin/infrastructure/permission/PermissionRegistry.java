@@ -3,6 +3,7 @@ package com.association.assofin.infrastructure.permission;
 import com.association.assofin.permission.entity.PermissionDefinition;
 import com.association.assofin.products.ProductPermissions;
 import com.association.assofin.role.permissions.RolePermissions;
+import com.association.assofin.user.permissions.UserPermissions;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -15,8 +16,8 @@ public class PermissionRegistry {
     public List<PermissionDefinition> all() {
         return Stream.of(
                         RolePermissions.values(),
+                        UserPermissions.values(),
                         ProductPermissions.values() // only as prototype add only required domains permission we should persist into the database
-                        //UserPermission.values()
                 )
                 .flatMap(Arrays::stream)
                 .map(permission -> (PermissionDefinition) permission)
