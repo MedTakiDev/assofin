@@ -6,9 +6,11 @@ import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -121,6 +123,16 @@ public class GlobalExceptionHandler {
                         .exceptionDec("Constraint violation")
                         .errorMessage("The resource already exists or violates a constraint")
                         .build());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)//missing permissions
+    public void handleAccessDenied(AccessDeniedException exp) {
+        throw exp;
+    }
+
+    @ExceptionHandler(AuthenticationException.class)//401 authentication failed
+    public void handleAuthentication(AuthenticationException exp) {
+        throw exp;
     }
 
     @ExceptionHandler(Exception.class)
