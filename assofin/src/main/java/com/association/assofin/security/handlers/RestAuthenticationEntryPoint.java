@@ -1,5 +1,6 @@
 package com.association.assofin.security.handlers;
 
+import com.association.assofin.handler.BusinessErrorCodes;
 import com.association.assofin.handler.ExceptionResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,13 +40,12 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.addHeader(HttpHeaders.SET_COOKIE,cookie.toString());
 
         ExceptionResponse errorResponse = ExceptionResponse.builder()
-                        .businessCode(HttpServletResponse.SC_UNAUTHORIZED)
-                        .exceptionDec("Authentication Required")
+                        .businessCode(BusinessErrorCodes.AUTHENTICATION_REQUIRED.getCode())
+                        .exceptionDec(BusinessErrorCodes.AUTHENTICATION_REQUIRED.getDescription())
                         .errorMessage("Authentication is required to access this resource.")
                         .build();
 
-
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setStatus(BusinessErrorCodes.AUTHENTICATION_REQUIRED.getHttpStatus().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }

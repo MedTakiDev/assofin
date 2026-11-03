@@ -6,6 +6,17 @@ spring:
     name: assofin
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev} # Defaults to 'dev' if not in .env
+  # Spring Boot's fallback /error body (errors that never reach GlobalExceptionHandler).
+  # These are the defaults, pinned on purpose so no profile can start leaking internals.
+  # Boot 4 moved these keys from server.error.* to spring.web.error.* (the old ones are ignored).
+  web:
+    error:
+      include-message: never
+      include-binding-errors: never
+      include-stacktrace: never
+      include-exception: false
+      whitelabel:
+        enabled: false
 
 # Global security attributes
 application:

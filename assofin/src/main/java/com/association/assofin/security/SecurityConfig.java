@@ -43,6 +43,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req ->
                         req.requestMatchers(
+                                        // Servlet error dispatch: without this, an error raised outside
+                                        // MVC (e.g. in a filter) is re-authorized and hidden behind a 401.
+                                        "/error",
                                         "/auth/login",
                                         "/auth/logout",
                                         "/ldap/**",

@@ -1,6 +1,7 @@
 package com.association.assofin.security.handlers;
 
 
+import com.association.assofin.handler.BusinessErrorCodes;
 import com.association.assofin.handler.ExceptionResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,12 +23,12 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
         ExceptionResponse errorResponse = ExceptionResponse.builder()
-                        .businessCode(HttpServletResponse.SC_FORBIDDEN)
-                        .exceptionDec("Access Denied")
+                        .businessCode(BusinessErrorCodes.ACCESS_DENIED.getCode())
+                        .exceptionDec(BusinessErrorCodes.ACCESS_DENIED.getDescription())
                         .errorMessage("You do not have permission to access this resource.")
                         .build();
 
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setStatus(BusinessErrorCodes.ACCESS_DENIED.getHttpStatus().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.getWriter().write(objectMapper.writeValueAsString(errorResponse)
         );
