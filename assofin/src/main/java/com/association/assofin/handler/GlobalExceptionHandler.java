@@ -4,6 +4,7 @@ package com.association.assofin.handler;
 import jakarta.mail.MessagingException;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,10 +18,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import static com.association.assofin.handler.BusinessErrorCodes.*;
 import static org.springframework.http.HttpStatus.*;
 
+@Slf4j
 @RestControllerAdvice
 //GlobalExceptionHandler — the central exception interceptor
 public class GlobalExceptionHandler {
@@ -136,14 +139,18 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ExceptionResponse> handleException(Exception exp) {
-        //todo implement logging mechanism needed
+    public ResponseEntity<ExceptionResponse> handleUnexpected(Exception exp) {
+        String errorId = UUID.randomUUID().toString();
+        log.error("Unhandled exception [errorId={}]", errorId, exp);
+        //todo LOG-01: replace the local UUID with MDC.get("requestId").
         return ResponseEntity
                 .status(INTERNAL_SERVER_ERROR)
                 .body(
                         ExceptionResponse.builder()
-                                .exceptionDec("Internal Server Error")
-                                .errorMessage(exp.getMessage())
+                                .errorId(errorId)
+                                .businessCode(SERVER_ERROR.getCode())
+                                .exceptionDec("An unexpected error occurred")
+                                .errorMessage("Internal server error")
                                 .build()
                 );
     }

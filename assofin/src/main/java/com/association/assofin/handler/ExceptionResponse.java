@@ -15,6 +15,7 @@ import java.util.Set;
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 //ExceptionResponse — the API error DTO
 public class ExceptionResponse {
+    private String errorId;  // correlation id for unexpected errors (500 only).
     private Integer businessCode;
     private String exceptionDec;
     private String errorMessage;
