@@ -5,29 +5,32 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.1.1</version>
+        <version>4.1.2</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.association</groupId>
     <artifactId>assofin</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name/>
-    <description/>
-    <url/>
-    <licenses>
-        <license/>
-    </licenses>
-    <developers>
-        <developer/>
-    </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
+    <name>assofin</name>
+    <description>Association financial management API</description>
     <properties>
         <java.version>21</java.version>
+        <!-- Security override: Boot 4.1.2 ships Jackson 3.1.7 / 2.21.7, the fix for CVE-2026-110879 is in
+             3.1.8 / 2.21.8. Remove both lines once the Boot parent manages these versions or newer. -->
+        <jackson-bom.version>3.1.8</jackson-bom.version>
+        <jackson-2-bom.version>2.21.8</jackson-2-bom.version>
+        <!-- Security override: CVE-2026-19880 and CVE-2026-104721 are fixed in Logback 1.6.5, Boot 4.1.2
+             ships 1.5.38. 1.6.x is a drop-in replacement. Remove once Boot manages 1.6.5 or newer. -->
+        <logback.version>1.6.6</logback.version>
+        <!-- Security override: CVE-2026-113602. Test scope only, not shipped. Remove once Boot manages 2.6.1. -->
+        <json-smart.version>2.6.1</json-smart.version>
+        <!-- Versions Spring Boot does not manage. Everything else comes from the parent BOM. -->
+        <jjwt.version>0.13.0</jjwt.version>
+        <springdoc.version>3.1.1</springdoc.version>
+        <jacoco.version>0.8.16</jacoco.version>
+        <spotless.version>3.11.0</spotless.version>
+        <palantir-java-format.version>2.103.0</palantir-java-format.version>
+        <extra-enforcer-rules.version>1.12.1</extra-enforcer-rules.version>
     </properties>
     <dependencies>
         <dependency>
@@ -101,22 +104,29 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Compile only against the JJWT API; its implementation is a runtime detail -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt</artifactId>
-            <version>0.13.0</version>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>3.1.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
-            <version>3.1.1</version>
+            <version>${springdoc.version}</version>
         </dependency>
     </dependencies>
 
@@ -161,6 +171,94 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!-- Stops the build early if the toolchain or the dependency set is unsafe -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>extra-enforcer-rules</artifactId>
+                        <version>${extra-enforcer-rules.version}</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>enforce-build-rules</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>[${java.version},)</version>
+                                </requireJavaVersion>
+                                <requireMavenVersion>
+                                    <version>[3.9,)</version>
+                                </requireMavenVersion>
+                                <dependencyConvergence/>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <!-- A servlet application must not pull in the reactive stack -->
+                                        <exclude>org.springframework:spring-webflux</exclude>
+                                        <!-- Use jjwt-api with runtime jjwt-impl and jjwt-jackson -->
+                                        <exclude>io.jsonwebtoken:jjwt</exclude>
+                                    </excludes>
+                                </bannedDependencies>
+                                <banDuplicateClasses>
+                                    <findAllDuplicates>true</findAllDuplicates>
+                                </banDuplicateClasses>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Test coverage report in target/site/jacoco. The minimum threshold comes with TST-01. -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Bill of materials in META-INF/sbom: lists every dependency shipped in the jar.
+                 Version and execution come from the Spring Boot parent. -->
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+            </plugin>
+
+            <!-- Formatting. Run by hand for now (spotless:check, spotless:apply).
+                 HYG-01 formats the code once and then binds the check to the build. -->
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless.version}</version>
+                <configuration>
+                    <java>
+                        <palantirJavaFormat>
+                            <version>${palantir-java-format.version}</version>
+                        </palantirJavaFormat>
+                        <removeUnusedImports/>
+                    </java>
+                </configuration>
             </plugin>
         </plugins>
     </build>
