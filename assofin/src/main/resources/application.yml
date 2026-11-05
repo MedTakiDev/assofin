@@ -18,6 +18,14 @@ spring:
       whitelabel:
         enabled: false
 
+# API documentation follows one switch, application.security.expose-api-docs (see ApiDocsProperties).
+# It is off unless a profile turns it on: when off, these endpoints do not exist.
+springdoc:
+  api-docs:
+    enabled: ${application.security.expose-api-docs:false}
+  swagger-ui:
+    enabled: ${application.security.expose-api-docs:false}
+
 # Global security attributes
 application:
   cors:

@@ -36,6 +36,7 @@ spring:
 
 application:
   security:
+    expose-api-docs: false # Already the default, pinned so production cannot inherit another value.
     cookie:
       # The __Host- prefix makes browsers enforce Secure, Path=/ and no Domain, so a subdomain or an
       # insecure origin cannot plant or overwrite the cookie. AuthCookieProperties checks this at startup.

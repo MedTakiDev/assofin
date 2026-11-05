@@ -35,5 +35,6 @@ spring:
 
 application:
   security:
+    expose-api-docs: true # Swagger UI for local development. Never set this in any other profile.
     cookie:
       secure: false # Local development runs on plain HTTP. Never set this in any other profile.

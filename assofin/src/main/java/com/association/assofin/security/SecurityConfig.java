@@ -3,6 +3,7 @@ package com.association.assofin.security;
 import com.association.assofin.security.handlers.RestAccessDeniedHandler;
 import com.association.assofin.security.handlers.RestAuthenticationEntryPoint;
 import com.association.assofin.security.jwt.JwtAuthenticationFilter;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,11 +25,27 @@ import static org.springframework.security.config.http.SessionCreationPolicy.STA
 @RequiredArgsConstructor
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
+
+    /** Exact paths, never wildcards, so a future endpoint cannot become public by accident. */
+    private static final String[] PUBLIC_ENDPOINTS = {
+            "/auth/login",
+            "/auth/logout"
+    };
+
+    /** Public only when {@link ApiDocsProperties#exposeApiDocs()} is true. */
+    private static final String[] API_DOCS_ENDPOINTS = {
+            "/v3/api-docs",
+            "/v3/api-docs/**",
+            "/swagger-ui.html",
+            "/swagger-ui/**"
+    };
+
     private final JwtAuthenticationFilter jwtAuthFilter;
     //private final AuthenticationProvider authenticationProvider;
     private final AuthenticationManager authenticationManager;
 
     private final CorsProperties corsProperties;
+    private final ApiDocsProperties apiDocsProperties;
 
 
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
@@ -41,26 +58,18 @@ public class SecurityConfig {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(req ->
-                        req.requestMatchers(
-                                        // Servlet error dispatch: without this, an error raised outside
-                                        // MVC (e.g. in a filter) is re-authorized and hidden behind a 401.
-                                        "/error",
-                                        "/auth/login",
-                                        "/auth/logout",
-                                        "/ldap/**",
-                                        "/v2/api-docs",
-                                        "/v3/api-docs",
-                                        "/v3/api-docs/**",
-                                        "/swagger-resources",
-                                        "/swagger-resources/**",
-                                        "/configuration/ui",
-                                        "/configuration/security",
-                                        "/swagger-ui/**",
-                                        "/webjars/**",
-                                        "/swagger-ui.html").permitAll()
-                                .anyRequest().authenticated()
-                )
+                .authorizeHttpRequests(req -> {
+                    // Servlet error dispatch: without this, an error raised outside MVC (e.g. in a
+                    // filter) is re-authorized and hidden behind a 401. This permits only the
+                    // container's internal forward: a direct request to /error stays authenticated.
+                    req.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll();
+                    req.requestMatchers(PUBLIC_ENDPOINTS).permitAll();
+                    if (apiDocsProperties.exposeApiDocs()) {
+                        req.requestMatchers(API_DOCS_ENDPOINTS).permitAll();
+                    }
+                    // Deny by default: a new endpoint is protected until it is listed above.
+                    req.anyRequest().authenticated();
+                })
                 // ---------------------------------------------------------
                 // EXCEPTION HANDLING
                 // ---------------------------------------------------------
