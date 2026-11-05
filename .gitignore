@@ -1,7 +1,8 @@
-# Environment files
+# Environment files, at any depth (assofin-frontend/.env included).
+# Only the *.example templates are committed.
 .env
-backend/.env
-frontend/.env
+.env.*
+!.env.example
 
 # IDE
 .idea/

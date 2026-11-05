@@ -2,6 +2,18 @@
 # DEVELOPMENT ENVIRONMENT CONFIGURATION (application-dev.yml)
 # ==============================================================================
 spring:
+  config:
+    # Reads the repository-root .env, whether the app starts from the repository root or from
+    # assofin/. Only the dev profile does this: production gets real environment variables,
+    # which always take precedence over this file.
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../.env[.properties]
+  docker:
+    compose:
+      # Start the containers yourself with "docker compose up -d". Otherwise startup fails from
+      # assofin/, where there is no compose.yaml. CFG-03 decides whether this dependency stays.
+      enabled: false
   datasource:
     # 'postgres-db' matches the service name defined in your compose.yaml file
     # Internal container port for postgres is always 5432

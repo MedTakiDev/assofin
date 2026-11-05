@@ -1,0 +1,86 @@
+package com.association.assofin.config;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.core.env.EnumerablePropertySource;
+import org.springframework.boot.env.YamlPropertySourceLoader;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Guards the local environment setup. Plain unit test: it only reads files.
+ *
+ * <p>Several tools parse .env differently, and Spring reads it as a properties file, so a format
+ * mistake or a missing key only shows up later as a confusing startup failure.
+ */
+class LocalEnvironmentContractTest {
+
+    private static final Path ENV_EXAMPLE = Path.of("..", ".env.example");
+
+    /** ${NAME} without a default value: the application can't start unless NAME is provided. */
+    private static final Pattern REQUIRED_PLACEHOLDER = Pattern.compile("\\$\\{([A-Z][A-Z0-9_]*)}");
+
+    private static final Pattern VALID_LINE = Pattern.compile("^[A-Z][A-Z0-9_]*=[^\\s\"'#]*$");
+
+    @Test
+    void onlyTheDevProfileReadsTheEnvFile() throws IOException {
+        assertThat(load("application-dev.yml").keySet()).contains("spring.config.import[0]");
+        assertThat(load("application-dev.yml").values())
+                .contains("optional:file:.env[.properties]", "optional:file:../.env[.properties]");
+
+        assertThat(load("application.yml").keySet()).noneMatch(key -> key.startsWith("spring.config.import"));
+        assertThat(load("application-prod.yml").keySet()).noneMatch(key -> key.startsWith("spring.config.import"));
+    }
+
+    @Test
+    void everyRequiredVariableIsDocumentedInTheExampleFile() throws IOException {
+        Set<String> documented = exampleLines().stream()
+                .map(line -> line.substring(0, line.indexOf('=')))
+                .collect(Collectors.toSet());
+
+        Map<String, Object> config = new HashMap<>(load("application.yml"));
+        config.putAll(load("application-dev.yml"));
+
+        for (Object value : config.values()) {
+            Matcher matcher = REQUIRED_PLACEHOLDER.matcher(String.valueOf(value));
+            while (matcher.find()) {
+                assertThat(documented).as("missing from .env.example").contains(matcher.group(1));
+            }
+        }
+    }
+
+    @Test
+    void theExampleFileFollowsTheFormatRules() throws IOException {
+        // A value with a trailing "# comment" would reach Spring as part of the value.
+        assertThat(exampleLines()).isNotEmpty().allMatch(line -> VALID_LINE.matcher(line).matches());
+    }
+
+    /** Setting lines only: comments and blank lines are dropped. */
+    private static List<String> exampleLines() throws IOException {
+        return Files.readAllLines(ENV_EXAMPLE).stream()
+                .filter(line -> !line.isBlank() && !line.startsWith("#"))
+                .toList();
+    }
+
+    private static Map<String, Object> load(String file) throws IOException {
+        Map<String, Object> properties = new HashMap<>();
+        for (var source : new YamlPropertySourceLoader().load(file, new ClassPathResource(file))) {
+            EnumerablePropertySource<?> enumerable = (EnumerablePropertySource<?>) source;
+            for (String name : enumerable.getPropertyNames()) {
+                properties.put(name, String.valueOf(enumerable.getProperty(name)));
+            }
+        }
+        return properties;
+    }
+}
