@@ -5,21 +5,23 @@
 
 ---
 
-## 0. Review status (2026-11-05)
+## 0. Review status (updated 2026-11-05, after SEC-05)
 
 > This file is a corrected copy of `issues and resolve prompts.md`. **Nothing was deleted:** every original line is still here, in the same order. Corrections are only added, directly under each heading. Where a correction and the original disagree, the correction wins.
 
-**Checked against:** branch `admin-bootstrap-user-provisioning` at commit `3417d4b`, by reading the code, running `./mvnw test` (57 tests pass) and running `ng build` (**it fails**).
+**Checked against:** branch `admin-bootstrap-user-provisioning` at commit `0dc6d1f`, by reading the code, running `./mvnw test` (87 tests pass) and running `ng build` (**it fails**).
 
 **Stickers:** ✅ DONE · 🟡 PARTIAL (the main problem is fixed, work remains) · ⬜ OPEN · 🗑️ OBSOLETE (no longer applies) · ⏸️ DEFERRED (applies only if a feature returns) · ✏️ corrected prompt
 
-**Totals:** 10 done · 14 partial · 28 open (including 2 new) · 2 obsolete · 1 deferred
+**Totals:** 13 done · 12 partial · 27 open · 2 obsolete · 1 deferred
+
+> **Order of work changed:** back end first, then front end, and Phase 1 is finished last. **Follow [section 8](#8-current-plan-back-end-first-feature-freeze)**, not section 5 or section 7.
 
 ### The five most important corrections
 
 1. 🔴 **The frontend does not compile**, since `70fc7f8` and `97ed947`. See [FE-09](#fe-09). Nobody noticed because there is no CI.
 2. 🔴 **`POST /users` was never built**, so the application has no way to create a user. See [step 1.6](#phase-1-6).
-3. 🟠 **`SEC-05`'s prompt would weaken security** if followed as written. See the corrected prompt in [SEC-05](#sec-05).
+3. ✅ **`SEC-05`'s prompt would have weakened security** if followed as written. Resolved with the corrected prompt in [SEC-05](#sec-05).
 4. 🟠 **`SPRING_PROFILES_ACTIVE` falls back to `dev`**, and no issue tracked it. Added to [CFG-01](#cfg-01).
 5. 🟠 **Login events never fire**, because `ProviderManager` is built by hand. This blocks [SEC-06](#sec-06) and [LOG-01](#log-01).
 
@@ -33,20 +35,20 @@
 | [1.3](#phase-1-3) | ✅ DONE | Branch `admin-bootstrap-user-provisioning` exists, 18 commits ahead of `main`. |
 | [1.4](#phase-1-4) | ✅ DONE | Removed in `2a5921c`, `6bd7b1e`, `e2c3212`, `70fc7f8`. **But `70fc7f8` broke the frontend build, see FE-09.** |
 | [1.5](#phase-1-5) | ✅ DONE | Commits `e6c0248`, `641e42a`, `932eda5`, `6f5d1ae`, `a5c3b50`, with Testcontainers tests. |
-| [1.6](#phase-1-6) | ⬜ OPEN | **Never built.** No endpoint creates users, so only the bootstrap admin can exist. |
-| [1.7](#phase-1-7) | ⬜ OPEN | Blocked by 1.6 and FE-09. |
+| [1.6](#phase-1-6) | ⬜ OPEN | Postponed to stage C. **Never built.** No endpoint creates users, so only the bootstrap admin can exist. |
+| [1.7](#phase-1-7) | ⬜ OPEN | Postponed to stage C, the last step of the whole plan. |
 | [SEC-01](#sec-01) | ✅ DONE | Self-registration removed in Phase 1. |
 | [SEC-02](#sec-02) | 🟡 PARTIAL | Credential prints removed in `97ed947`. The rest is LOG-01. |
 | [SEC-03](#sec-03) | ✅ DONE | Commits `bfadae2`, `a997a15`, `03a69ad`, with `GlobalExceptionHandlerTest` (15 tests). |
 | [SEC-04](#sec-04) | ✅ DONE | Commit `3417d4b`, with 31 cookie tests. |
-| [SEC-05](#sec-05) | ⬜ OPEN | Next issue to do. **The prompt below is out of date.** |
+| [SEC-05](#sec-05) | ✅ DONE | Commit `0dc6d1f`, with 30 new tests. |
 | [SEC-06](#sec-06) | ⬜ OPEN | Only `/auth/login` applies now. Do it after Redis returns. |
 | [SEC-07](#sec-07) | ⬜ OPEN | Still open. Depends on the dev proxy from FE-06. |
 | [SEC-08](#sec-08) | 🟡 PARTIAL | `RedisDebugConfig` is gone. Port binding is still open. |
 | [SEC-09](#sec-09) | ⬜ OPEN | Still open. Refresh tokens moved to AUTH-01. |
-| [BUG-01](#bug-01) | 🟡 PARTIAL | Auditing works (`e6c0248`). `AuditableEntity` and `Instant` are not done. |
+| [BUG-01](#bug-01) | ✅ DONE | Auditing works (`e6c0248`), proven by a test. Improvements remain in stage A3 of section 8. |
 | [BUG-02](#bug-02) | ✅ DONE | `RoleInitializer` + `AdminUserInitializer`, tested. |
-| [BUG-03](#bug-03) | 🟡 PARTIAL | Prefix fixed (`641e42a`). Role-name validation and the unit test remain. |
+| [BUG-03](#bug-03) | ✅ DONE | Fixed for system roles (`641e42a`), proven by a test. One validation gap moved to BUG-10. |
 | [BUG-04](#bug-04) | 🟡 PARTIAL | Root cause fixed (`a5c3b50`). Principal, filter and open-in-view remain. |
 | [BUG-05](#bug-05) | ⬜ OPEN | Still open: `UserProfileResponseDTO` holds `Role role`. |
 | [BUG-06](#bug-06) | ⏸️ DEFERRED | No mail is sent today. Applies only when mail returns. |
@@ -71,7 +73,7 @@
 | [CFG-05](#cfg-05) | ⬜ OPEN | Still open: both springdoc starters, `jjwt` aggregate. |
 | [OPS-01](#ops-01) | ⬜ OPEN | Still open. |
 | [LOG-01](#log-01) | ⬜ OPEN | Still open. Some facts below are out of date. |
-| [TST-01](#tst-01) | 🟡 PARTIAL | Backend foundation exists: 57 tests. Frontend specs are still CLI stubs. |
+| [TST-01](#tst-01) | 🟡 PARTIAL | Backend foundation exists: 87 tests. Frontend specs are still CLI stubs. |
 | [HYG-01](#hyg-01) | 🟡 PARTIAL | Some items disappeared with Phase 1. Most remain. |
 | [FE-01](#fe-01) | ⬜ OPEN | Still open. Blocked by FE-09. |
 | [FE-02](#fe-02) | ⬜ OPEN | Still open. The `strict` flag is missing from `tsconfig.json`. |
@@ -81,7 +83,7 @@
 | [FE-06](#fe-06) | ⬜ OPEN | Still open. The dev proxy (step 5) unlocks SEC-07. |
 | [FE-07](#fe-07) | 🟡 PARTIAL | Signup removed. i18n, layout and logger remain. |
 | [FE-08](#fe-08) | ⬜ OPEN | Still open. One claim is out of date. |
-| [FE-09](#fe-09) | ⬜ OPEN | **New. 🔴 The frontend does not compile.** |
+| [FE-09](#fe-09) | ⬜ OPEN | **New. 🔴 The frontend does not compile.** Postponed to the start of stage B. |
 | [AUTH-01](#auth-01) | ⬜ OPEN | **New. Refresh tokens with Redis.** |
 
 ---
@@ -413,7 +415,7 @@ Commit message: "bootstrap admin role with all permissions and default admin use
 <a id="phase-1-6"></a>
 ### 1.6 Create-user endpoint: `POST /users`
 
-> **⬜ OPEN** · **Never built.** No endpoint creates users, so only the bootstrap admin can exist.
+> **⬜ OPEN · POSTPONED to stage C** · **Never built.** No endpoint creates users, so only the bootstrap admin can exist. See [section 8](#8-current-plan-back-end-first-feature-freeze).
 
 **Correction: this step is NOT done, although other sections read as if it were.**
 - `UserController` has only `GET /users/me`. `grep PostMapping` finds nothing under `user/`.
@@ -494,7 +496,7 @@ Commit message: "add admin-only create user endpoint".
 <a id="phase-1-7"></a>
 ### 1.7 Verify and open the Phase 1 pull request
 
-> **⬜ OPEN** · Blocked by 1.6 and FE-09.
+> **⬜ OPEN · POSTPONED to stage C** · The last step of the whole plan. See [section 8](#8-current-plan-back-end-first-feature-freeze).
 
 **Correction:** add these to the definition of done: `npm run build` passes ([FE-09](#fe-09)) and `/ldap/**` is gone ([SEC-05](#sec-05)). `POST /auth/register` now returns 401 for anonymous callers, because `anyRequest().authenticated()` runs first.
 
@@ -601,7 +603,7 @@ Remove every place where credentials or tokens are printed:
 
 **Correction to the prompt, for future reference:** the `server.error.*` keys are ignored in Spring Boot 4. They moved to `spring.web.error.*`.
 
-**Optional hardening:** replace the `"/error"` matcher with `.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()`, done in [SEC-05](#sec-05).
+**Optional hardening:** ✅ done in `0dc6d1f`: `.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()` replaced the `"/error"` matcher.
 
 **Where:** `handler/GlobalExceptionHandler.java:128-140` (also 87-115, 59-67).
 **Problem:**
@@ -665,7 +667,13 @@ Centralize auth cookie creation in the backend:
 <a id="sec-05"></a>
 ### SEC-05 🟠 Swagger and `/ldap/**` public everywhere
 
-> **⬜ OPEN** · Next issue to do. **The prompt below is out of date.**
+> **✅ DONE** · Commit `0dc6d1f`, with 30 new tests.
+
+**Delivered:** exact public paths, `/ldap/**` and the Springfox paths removed, `/webjars/**` removed, `ApiDocsProperties` off by default, and the error-dispatch rule, tested on a real Tomcat by `ErrorDispatchSecurityTest`.
+
+**Differs from the corrected prompt on purpose:** `springdoc.api-docs.enabled` and `springdoc.swagger-ui.enabled` follow `application.security.expose-api-docs` in `application.yml`, instead of being set only in the prod file. One switch can't disagree with itself, and when it's off the endpoints don't exist.
+
+**Still to check:** open Swagger UI once in a real browser with the `dev` profile.
 
 **Correction:** the prompt predates Phase 1.
 - Step 1 says to keep `/auth/**` public and lists `register` and `activate-account`. Those endpoints no longer exist, and `SecurityConfig` already lists exactly `/auth/login` and `/auth/logout`. Following step 1 would make security **worse**.
@@ -832,9 +840,9 @@ Harden JwtService/JwtProperties:
 <a id="bug-01"></a>
 ### BUG-01 🔴 JPA auditing is not enabled
 
-> **🟡 PARTIAL** · Auditing works (`e6c0248`). `AuditableEntity` and `Instant` are not done.
+> **✅ DONE** · Auditing works (`e6c0248`), proven by a test. Improvements remain in stage A3 of [section 8](#8-current-plan-back-end-first-feature-freeze).
 
-**Correction:** `JpaAuditingConfig` enables auditing, so the 🔴 failure is fixed. Still open from the prompt: `AuditableEntity`, `Clock`-backed `DateTimeProvider`, `Instant` instead of `LocalDate`, `createdBy`/`updatedBy`, and removing `.createdDate(LocalDate.now())` from `UserService`. Severity drops to 🟡.
+**Correction:** the reported failure is fixed: `JpaAuditingConfig` enables auditing, and `BootstrapInitializersTest:84` proves `createdDate` is filled. The items below are improvements, not this bug, and stay on the plan: `AuditableEntity`, a `Clock`-backed `DateTimeProvider`, `Instant` instead of `LocalDate`, `createdBy`/`updatedBy`. `.createdDate(LocalDate.now())` at `UserService.java:37` is removed by [step 1.6](#phase-1-6).
 
 
 > ⚠️ **Prerequisite of [Phase 1](#phase-1), step [1.5](#phase-1-5).** Seeding the `ADMIN` role fails until auditing is enabled.
@@ -888,9 +896,11 @@ Implement deterministic seeding of roles and their permissions:
 <a id="bug-03"></a>
 ### BUG-03 🔴 Authority double prefix `ROLE_ROLE_ADMIN`
 
-> **🟡 PARTIAL** · Prefix fixed (`641e42a`). Role-name validation and the unit test remain.
+> **✅ DONE** · Fixed for system roles (`641e42a`), proven by a test. One validation gap moved to [BUG-10](#bug-10).
 
-**Correction:** steps 1 and 2 are done (`SystemRole`, one `ROLE_` prefix). Step 3 is open: `CreateRoleRequestDTO.name` is only `@NotNull`, so blank names and names starting with `ROLE_` are accepted. Step 4's unit test doesn't exist. Severity drops to 🟡.
+**Correction:** steps 1 and 2 are done (`SystemRole`, one `ROLE_` prefix). Step 4 is also covered: `BootstrapInitializersTest:85-88` asserts `ROLE_ADMIN` and rejects `ROLE_ROLE_ADMIN`. (An earlier version of this note wrongly said that test didn't exist.)
+
+**Remaining gap, tracked in [BUG-10](#bug-10):** step 3. `CreateRoleRequestDTO.name` is only `@NotNull`, so `POST /role` with `ROLE_MANAGER` still produces `ROLE_ROLE_MANAGER`, and blank names are accepted. Only a user with `role::create` can trigger it.
 
 
 > ⚠️ **Handled in [Phase 1](#phase-1), step [1.5](#phase-1-5)** (`SystemRole` names stored without the `ROLE_` prefix).
@@ -1082,6 +1092,8 @@ Fix role listing pagination:
 ### BUG-10 🟠 PATCH requires all fields
 
 > **⬜ OPEN** · Still open. No DELETE endpoint, no system-role protection.
+
+**Added from [BUG-03](#bug-03):** validate role names here too: `@NotBlank`, `@Size(max = 50)`, `@Pattern("^[A-Z][A-Z0-9_]*$")`, and reject names starting with `ROLE_`.
 
 **Correction:** the ADMIN role can still be renamed or emptied through `PATCH`. `RoleInitializer` restores missing grants, so an emptied ADMIN recovers at the next restart. A **renamed** ADMIN is much worse: no user holds `ADMIN` any more, so `AdminUserInitializer` tries to recreate the admin, finds the email taken, and **stops the application at startup**. Treat step 4 as the priority.
 
@@ -1760,7 +1772,7 @@ Split into commits: "add backend logging, correlation id and audit trail",
 <a id="tst-01"></a>
 ### TST-01 🟠 No real tests
 
-> **🟡 PARTIAL** · Backend foundation exists: 57 tests. Frontend specs are still CLI stubs.
+> **🟡 PARTIAL** · Backend foundation exists: 87 tests. Frontend specs are still CLI stubs.
 
 **Correction:** done: `TestcontainersConfiguration`, `GlobalExceptionHandlerTest`, the cookie tests, and the bootstrap tests. `AssofinApplicationTests` no longer needs live infrastructure.
 
@@ -2067,7 +2079,7 @@ Once Phase 1 and steps 1 to 4 are done, this would reasonably score **7.5 to 8 /
 <a id="fe-09"></a>
 ### FE-09 🔴 The frontend does not compile
 
-> **⬜ OPEN** · New. Do this first.
+> **⬜ OPEN · POSTPONED to stage B** · New. It opens the front-end stage, because no front-end issue can be verified until the app compiles.
 
 **Where:** `features/auth/pages/login-page/login-page.ts`, `features/auth/components/login-form/login-form.ts`.
 **Problem:** `ng build` fails with 6 errors:
@@ -2145,6 +2157,8 @@ Tests
 
 ## 7. Corrected order of work
 
+> **🗑️ SUPERSEDED** by [section 8](#8-current-plan-back-end-first-feature-freeze). Kept for reference.
+
 > This replaces the order in [section 5](#5-suggested-order-of-work), which stays above for reference. The detailed, class-by-class version is in `bioler plate issues back-end and front-end.md`.
 
 0. **Repair and finish Phase 1:** [FE-09](#fe-09) → [SEC-05](#sec-05) → [step 1.6](#phase-1-6) → [step 1.7](#phase-1-7) (PR to `main`).
@@ -2157,3 +2171,75 @@ Tests
 7. **Observability and delivery:** [LOG-01](#log-01), the rest of [OPS-01](#ops-01), [TST-01](#tst-01), [HYG-01](#hyg-01), [CFG-04](#cfg-04).
 8. **Only if email returns:** [BUG-06](#bug-06). Permanently closed: [BUG-07](#bug-07), [ARC-03](#arc-03).
 
+---
+
+## 8. Current plan: back end first, feature freeze
+
+> **Decision (2026-11-05).** Close the core system issues before adding anything new. The order is back end, then front end, and Phase 1 is finished last. This replaces sections 5 and 7.
+
+**Feature freeze:** no new domains, endpoints or pages until [the readiness gate](#readiness-gate) is passed. Work means fixing or hardening what exists.
+
+### Stage A: back end core
+
+| Step | Goal | Issues |
+|---|---|---|
+| A1 | Reproducible build and configuration | [CFG-05](#cfg-05), [CFG-02](#cfg-02), [CFG-01](#cfg-01), [CFG-03](#cfg-03), [CFG-04](#cfg-04), CI for the back end from [OPS-01](#ops-01) |
+| A2 | Clean structure before moving more code | [HYG-01](#hyg-01) (back end), [ARC-02](#arc-02) |
+| A3 | Trustworthy persistence | [PER-02](#per-02), [PER-01](#per-01), the [BUG-01](#bug-01) improvements, [ARC-04](#arc-04), [PER-04](#per-04) |
+| A4 | One error contract | [BUG-11](#bug-11), [ERR-01](#err-01) |
+| A5 | Extensible authorization | [ARC-01](#arc-01), [BUG-09](#bug-09), [BUG-10](#bug-10), [PER-03](#per-03) |
+| A6 | Hardened authentication | [BUG-04](#bug-04), [BUG-05](#bug-05), [SEC-09](#sec-09), [AUTH-01](#auth-01) (back end), [SEC-06](#sec-06), [SEC-08](#sec-08) |
+| A7 | Observable and deployable | [LOG-01](#log-01) (back end, finishes [SEC-02](#sec-02)), the rest of [OPS-01](#ops-01) (back end), [TST-01](#tst-01) (back end) |
+
+**Stage A is done when** `./mvnw verify` passes in CI, with architecture rules and a coverage threshold enforced.
+
+### Stage B: front end core
+
+| Step | Goal | Issues |
+|---|---|---|
+| B1 | **It compiles** | [FE-09](#fe-09). Must come first |
+| B2 | Strict tooling and same-origin dev | [FE-02](#fe-02), [FE-08](#fe-08), [FE-06](#fe-06), CI for the front end from [OPS-01](#ops-01) |
+| B3 | CSRF, now that the proxy exists | [SEC-07](#sec-07) |
+| B4 | Error and API contract | [FE-03](#fe-03), [FE-05](#fe-05) |
+| B5 | Authentication state | [FE-01](#fe-01), [AUTH-01](#auth-01) (silent refresh), [FE-04](#fe-04) |
+| B6 | Application shell | [FE-07](#fe-07), [LOG-01](#log-01) (front end, removes the last `console.*` calls from [SEC-02](#sec-02)) |
+| B7 | Tested | [TST-01](#tst-01) (front end), the front-end image from [OPS-01](#ops-01) |
+
+**Stage B is done when** `npm run lint`, `npm test` and `npm run build` pass in CI, and a user can log in, stay logged in and log out in a real browser.
+
+### Stage C: finish Phase 1
+
+| Step | Goal | Issues |
+|---|---|---|
+| C1 | Create accounts, built on the final architecture | [step 1.6](#phase-1-6) |
+| C2 | Merge to `main` | [step 1.7](#phase-1-7) |
+
+<a id="readiness-gate"></a>
+### Readiness gate: ready for new domains and features
+
+Open a new domain or feature only when all of these are true:
+
+- [ ] Every issue in stages A, B and C is ✅ DONE, 🗑️ OBSOLETE or ⏸️ DEFERRED.
+- [ ] A new back-end domain needs only its own package: entity, migration, permissions, API.
+- [ ] A new front-end feature needs only its own lazy-loaded folder, a route and a permission.
+- [ ] Every error uses one documented format.
+- [ ] CI blocks a merge on failing tests, lint, architecture rules or coverage.
+- [ ] `docs/adding-a-feature.md` explains both steps.
+
+### What changes because of this order
+
+| Consequence | What to do |
+|---|---|
+| **FE-09 can't wait until the very end.** Every stage B issue needs a compiling app. | It opens stage B, not stage C. |
+| **[LOG-01](#log-01) and [TST-01](#tst-01) expect `POST /users`**, which won't exist yet. | Create test users through `UserRepository`. Add the `USER_CREATED` audit event in step C1. |
+| **The Role and error API will change during stage A** (`/roles`, `role:read`, `ProblemDetail`) while the UI can't be run. | Expected. Stages B4 and B5 align the front end in one pass. |
+| **[AUTH-01](#auth-01) spans both stages.** | Keep the access token lifetime long until silent refresh works in B5. Then set 15 minutes. |
+| **[SEC-07](#sec-07) moves to the front-end stage.** | It needs the dev proxy from [FE-06](#fe-06) to be tested end to end. |
+| **Only the bootstrap admin exists until C1.** | No impact while the feature freeze holds. |
+| **`main` receives nothing until C2**, so this branch keeps growing and the final PR will be very large. | Push often. Keep one commit per issue, so the PR can be reviewed commit by commit. |
+
+### Not part of the core plan
+
+These stay out until the gate is passed: [BUG-06](#bug-06) (mail) and `GET/PATCH /users`, deactivation, password reset, and the user and role administration pages from milestones M6 and M8 of `bioler plate issues back-end and front-end.md`.
+
+> **Note:** that roadmap file still shows the previous milestone order. This section takes priority.
