@@ -7,6 +7,7 @@ import com.association.assofin.permission.repository.PermissionRepository;
 import com.association.assofin.role.SystemRole;
 import com.association.assofin.role.entity.Role;
 import com.association.assofin.role.repository.RoleRepository;
+import com.association.assofin.security.cookie.AuthCookieProperties;
 import com.association.assofin.user.entity.User;
 import com.association.assofin.user.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
@@ -51,6 +52,7 @@ class BootstrapInitializersTest {
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private TransactionTemplate transactionTemplate;
     @Autowired private MockMvc mockMvc;
+    @Autowired private AuthCookieProperties authCookieProperties;
 
     @Autowired private PermissionInitializer permissionInitializer;
     @Autowired private RoleInitializer roleInitializer;
@@ -114,7 +116,7 @@ class BootstrapInitializersTest {
                                 {"email": "%s", "password": "%s"}
                                 """.formatted(ADMIN_EMAIL, ADMIN_PASSWORD)))
                 .andExpect(status().isAccepted())
-                .andReturn().getResponse().getCookie("token");
+                .andReturn().getResponse().getCookie(authCookieProperties.name());
 
         assertThat(token).isNotNull();
 

@@ -2,13 +2,13 @@ package com.association.assofin.security.handlers;
 
 import com.association.assofin.handler.BusinessErrorCodes;
 import com.association.assofin.handler.ExceptionResponse;
+import com.association.assofin.security.cookie.AuthCookieService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
@@ -20,24 +20,12 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
     private final ObjectMapper objectMapper;
+    private final AuthCookieService authCookieService;
 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-        /*
-         * Clear the JWT cookie.
-         *
-         * The attributes used to delete the cookie should match
-         * the attributes used when the cookie was created.
-         */
-        ResponseCookie cookie = ResponseCookie.from("token", "")
-                .httpOnly(true)
-                .secure(false) // true in production
-                .path("/")
-                .maxAge(0)
-                .sameSite("Strict")
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE,cookie.toString());
+        // Clear the JWT cookie: it is missing, expired or invalid, so the browser should stop sending it.
+        response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.createClearingCookie().toString());
 
         ExceptionResponse errorResponse = ExceptionResponse.builder()
                         .businessCode(BusinessErrorCodes.AUTHENTICATION_REQUIRED.getCode())

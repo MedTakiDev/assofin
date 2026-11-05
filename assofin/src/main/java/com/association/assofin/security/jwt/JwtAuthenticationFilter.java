@@ -1,9 +1,9 @@
 package com.association.assofin.security.jwt;
 
 
+import com.association.assofin.security.cookie.AuthCookieService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
@@ -15,7 +15,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.util.WebUtils;
 
 import java.io.IOException;
 
@@ -25,6 +24,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final AuthCookieService authCookieService;
 
     @Override
     protected void doFilterInternal(
@@ -35,7 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // ================================================================
         // 1. Extract JWT from HttpOnly cookie
         // ================================================================
-        String jwt = extractTokenFromCookie(request);
+        String jwt = authCookieService.extractAccessToken(request);
         // ================================================================
         // 2. No token
         // ================================================================
@@ -86,11 +86,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 4. Continue filter chain
         // ================================================================
         filterChain.doFilter(request, response);
-    }
-
-
-    private String extractTokenFromCookie(HttpServletRequest request) {
-        Cookie cookie = WebUtils.getCookie(request, "token");
-        return cookie != null ? cookie.getValue() : null;
     }
 }

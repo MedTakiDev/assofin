@@ -33,3 +33,10 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
+
+application:
+  security:
+    cookie:
+      # The __Host- prefix makes browsers enforce Secure, Path=/ and no Domain, so a subdomain or an
+      # insecure origin cannot plant or overwrite the cookie. AuthCookieProperties checks this at startup.
+      name: __Host-access_token
