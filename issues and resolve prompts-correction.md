@@ -13,7 +13,7 @@
 
 **Stickers:** ✅ DONE · 🟡 PARTIAL (the main problem is fixed, work remains) · ⬜ OPEN · 🗑️ OBSOLETE (no longer applies) · ⏸️ DEFERRED (applies only if a feature returns) · ✏️ corrected prompt
 
-**Totals:** 13 done · 12 partial · 27 open · 2 obsolete · 1 deferred
+**Totals:** 16 done · 12 partial · 24 open · 2 obsolete · 1 deferred (updated 2026-11-07 for CFG-01, CFG-02 and CFG-05; CFG-03 stays partial)
 
 > **Order of work changed:** back end first, then front end, and Phase 1 is finished last. **Follow [section 8](#8-current-plan-back-end-first-feature-freeze)**, not section 5 or section 7.
 
@@ -66,11 +66,11 @@
 | [ARC-02](#arc-02) | ⬜ OPEN | Still open. |
 | [ARC-03](#arc-03) | 🗑️ OBSOLETE | Redis was removed. **Keep the lesson when it returns.** |
 | [ARC-04](#arc-04) | ⬜ OPEN | Still open. |
-| [CFG-01](#cfg-01) | ⬜ OPEN | Still open. **One important item was missing.** ✏️ Simple approach agreed, use its corrected prompt. |
-| [CFG-02](#cfg-02) | ⬜ OPEN | Still open. Needed before CFG-01's new step. |
-| [CFG-03](#cfg-03) | 🟡 PARTIAL | `compose.example.yaml` and Redis are gone. The rest is open. |
+| [CFG-01](#cfg-01) | ✅ DONE | `104930f`, with the simple approach. `ddl-auto`/`show-sql` in prod left to PER-01. |
+| [CFG-02](#cfg-02) | ✅ DONE | `687e7c1`. Secret scanning handed over to OPS-01. |
+| [CFG-03](#cfg-03) | 🟡 PARTIAL | `compose.example.yaml` and Redis are gone. `spring-boot-docker-compose` removed in `f22721d`. Image tags, healthchecks, `127.0.0.1` ports and app services remain. |
 | [CFG-04](#cfg-04) | 🟡 PARTIAL | "Avalon Odyssey" is gone with registration. The rest is open. |
-| [CFG-05](#cfg-05) | ⬜ OPEN | Still open: both springdoc starters, `jjwt` aggregate. |
+| [CFG-05](#cfg-05) | ✅ DONE | `60afa07`. Coverage threshold to TST-01, Spotless binding to HYG-01. |
 | [OPS-01](#ops-01) | ⬜ OPEN | Still open. |
 | [LOG-01](#log-01) | ⬜ OPEN | Still open. Some facts below are out of date. |
 | [TST-01](#tst-01) | 🟡 PARTIAL | Backend foundation exists: 87 tests. Frontend specs are still CLI stubs. |
@@ -1406,7 +1406,7 @@ Clean up the User aggregate:
 <a id="cfg-01"></a>
 ### CFG-01 🟠 Profile configurations drift
 
-> **⬜ OPEN** · Still open. **One important item was missing.** ✏️ Approach agreed on 2026-11-07, not implemented yet: **use the corrected prompt in "Decision" below**, not the original prompt.
+> **✅ DONE** · Commit `104930f`, implemented with the corrected prompt in "Decision" below (the simple approach). `spring.profiles.active: ${SPRING_PROFILES_ACTIVE}` has no fallback. `application.yml` holds every shared setting and the production cookie (`__Host-access_token`, `secure: true`). The dev and prod files hold only real differences. `JwtProperties` and `CorsProperties` are validated records, and the CORS `maxAge` is applied. The README has the workflow, profiles, troubleshooting and the production variable table. 94 tests, including `ProductionProfileStartupTest` and two new contract tests. **Left on purpose:** `ddl-auto` and `show-sql` in prod go to [PER-01](#per-01), the context-path trailing slash and `MAIL_FROM` to [CFG-04](#cfg-04), JWT key strength to [SEC-09](#sec-09).
 
 **Correction: missing from this issue.** `application.yml:8` has `${SPRING_PROFILES_ACTIVE:dev}`. If production starts without that variable, it silently runs as **dev**, so `Secure` is off and, after [SEC-05](#sec-05), the API docs are on. Add this step to the prompt:
 ```
@@ -1492,7 +1492,7 @@ Restructure Spring configuration:
 <a id="cfg-02"></a>
 ### CFG-02 🟠 `.env` handling problems
 
-> **⬜ OPEN** · Still open. Needed before CFG-01's new step.
+> **✅ DONE** · Commit `687e7c1`. The dev profile imports the root `.env` (step 1), `.env.example` follows the format rules with a correct header and units (steps 2 and 3), `.gitignore` uses the real paths and ignores `.env.*` at any depth (step 4), and `LocalEnvironmentContractTest` guards the format. **Handed over:** step 5 (secret scanning such as gitleaks) goes to the CI work in [OPS-01](#ops-01). **Note:** this commit also disabled `spring-boot-docker-compose` in dev. That was reverted in `f22721d`, where the dependency was removed instead, see [CFG-03](#cfg-03).
 
 **Correction:** the comment `15 minutes = 86400000 ms` is still there. `REDIS_CONTAINER_NAME` is gone from `.env.example`.
 
@@ -1524,7 +1524,7 @@ Make environment configuration reproducible and safe:
 <a id="cfg-03"></a>
 ### CFG-03 🟡 Compose duplication and overlap
 
-> **🟡 PARTIAL** · `compose.example.yaml` and Redis are gone. The rest is open.
+> **🟡 PARTIAL** · `compose.example.yaml` and Redis are gone. Step 4 done in commit `f22721d`: `spring-boot-docker-compose` removed, containers started with `docker compose up -d`. Still open: pinned image tags, healthchecks for every service, ports bound to `127.0.0.1`, and the backend and frontend services (with [OPS-01](#ops-01)).
 
 **Correction:** step 1's deletion is done. Still open: `maildev/maildev` has no tag, ports aren't bound to `127.0.0.1`, commented services point to `./backend` and `./frontend`, and the `spring-boot-docker-compose` decision. Redis returns with [AUTH-01](#auth-01).
 
@@ -1576,7 +1576,7 @@ Remove project-specific and placeholder values:
 <a id="cfg-05"></a>
 ### CFG-05 🟡 `pom.xml` issues
 
-> **⬜ OPEN** · Still open: both springdoc starters, `jjwt` aggregate.
+> **✅ DONE** · Commit `60afa07`. WebFlux springdoc starter removed (step 1), `jjwt-api` with runtime `jjwt-impl`/`jjwt-jackson` (step 2), real name and description, empty metadata removed (step 3), Maven Enforcer, JaCoCo report, CycloneDX SBOM and Spotless added (step 4). Also: Spring Boot 4.1.2 and documented security overrides for Jackson, Logback and json-smart. **Handed over:** the JaCoCo minimum threshold goes to [TST-01](#tst-01), binding Spotless to the build goes to [HYG-01](#hyg-01), and ArchUnit comes with [ARC-02](#arc-02). Testcontainers for PostgreSQL was already in place; Redis waits for [AUTH-01](#auth-01).
 
 **Where:** `assofin/pom.xml`.
 **Problem:** Both `springdoc-openapi-starter-webmvc-ui` **and** `-webflux-ui`, which pulls WebFlux into a servlet app (classpath conflicts, bigger image). The `jjwt` aggregate artifact is used instead of `jjwt-api` + runtime `jjwt-impl`/`jjwt-jackson`. There are empty `<name/>`, `<licenses>`, `<developers>`, `<scm>` placeholders, and no quality or security plugins.
