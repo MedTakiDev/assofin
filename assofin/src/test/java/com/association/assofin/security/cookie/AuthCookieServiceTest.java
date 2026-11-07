@@ -18,13 +18,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Checks the cookie each profile really produces. The attributes are read from the real
- * {@code application-dev.yml} and {@code application-prod.yml}, so removing or changing a setting in
- * those files fails here. Plain unit test: only the cookie settings are bound, nothing else starts.
+ * {@code application.yml} with the profile file on top, exactly as Spring layers them, so removing or
+ * changing a setting in those files fails here. Plain unit test: only the cookie settings are bound,
+ * nothing else starts.
  */
 class AuthCookieServiceTest {
 
     private static final long ONE_DAY_MS = 86_400_000L;
     private static final String JWT = "header.payload.signature";
+    private static final String SHARED = "application.yml";
 
     // ---------------------------------------------------------------------------------
     // Secure by default: an environment with no cookie configuration
@@ -32,7 +34,7 @@ class AuthCookieServiceTest {
 
     @Test
     void withoutConfigurationTheCookieIsSecure() throws IOException {
-        ResponseCookie cookie = serviceFor(null, ONE_DAY_MS).createAccessTokenCookie(JWT);
+        ResponseCookie cookie = serviceFor(ONE_DAY_MS).createAccessTokenCookie(JWT);
 
         assertThat(cookie.getName()).isEqualTo("access_token");
         assertThat(cookie.isSecure()).isTrue();
@@ -42,13 +44,22 @@ class AuthCookieServiceTest {
         assertThat(cookie.getDomain()).isNull();
     }
 
+    @Test
+    void aForgottenOrMisspelledProfileGetsTheProductionCookie() throws IOException {
+        // Only application.yml applies: it must hold the production values, never the dev ones.
+        ResponseCookie cookie = serviceFor(ONE_DAY_MS, SHARED).createAccessTokenCookie(JWT);
+
+        assertThat(cookie.getName()).isEqualTo("__Host-access_token");
+        assertThat(cookie.isSecure()).isTrue();
+    }
+
     // ---------------------------------------------------------------------------------
     // Development profile
     // ---------------------------------------------------------------------------------
 
     @Test
-    void devProfileDisablesOnlyTheSecureFlag() throws IOException {
-        ResponseCookie cookie = serviceFor("application-dev.yml", ONE_DAY_MS).createAccessTokenCookie(JWT);
+    void devProfileUsesAPlainCookieForLocalHttp() throws IOException {
+        ResponseCookie cookie = serviceFor(ONE_DAY_MS, SHARED, "application-dev.yml").createAccessTokenCookie(JWT);
 
         assertThat(cookie.getName()).isEqualTo("access_token");
         assertThat(cookie.isSecure()).isFalse();
@@ -62,7 +73,7 @@ class AuthCookieServiceTest {
 
     @Test
     void prodProfileUsesASecureHostPrefixedCookie() throws IOException {
-        ResponseCookie cookie = serviceFor("application-prod.yml", ONE_DAY_MS).createAccessTokenCookie(JWT);
+        ResponseCookie cookie = serviceFor(ONE_DAY_MS, SHARED, "application-prod.yml").createAccessTokenCookie(JWT);
 
         assertThat(cookie.getName()).isEqualTo("__Host-access_token");
         assertThat(cookie.isSecure()).isTrue();
@@ -78,8 +89,8 @@ class AuthCookieServiceTest {
 
     @Test
     void cookieLifetimeIsTheJwtLifetime() throws IOException {
-        ResponseCookie oneHour = serviceFor(null, 3_600_000L).createAccessTokenCookie(JWT);
-        ResponseCookie oneDay = serviceFor(null, ONE_DAY_MS).createAccessTokenCookie(JWT);
+        ResponseCookie oneHour = serviceFor(3_600_000L).createAccessTokenCookie(JWT);
+        ResponseCookie oneDay = serviceFor(ONE_DAY_MS).createAccessTokenCookie(JWT);
 
         assertThat(oneHour.getMaxAge()).isEqualTo(Duration.ofHours(1));
         assertThat(oneDay.getMaxAge()).isEqualTo(Duration.ofDays(1));
@@ -87,7 +98,7 @@ class AuthCookieServiceTest {
 
     @Test
     void accessTokenCookieCarriesTheJwt() throws IOException {
-        assertThat(serviceFor(null, ONE_DAY_MS).createAccessTokenCookie(JWT).getValue()).isEqualTo(JWT);
+        assertThat(serviceFor(ONE_DAY_MS).createAccessTokenCookie(JWT).getValue()).isEqualTo(JWT);
     }
 
     // ---------------------------------------------------------------------------------
@@ -96,7 +107,7 @@ class AuthCookieServiceTest {
 
     @Test
     void clearingCookieExpiresImmediatelyAndHasNoValue() throws IOException {
-        ResponseCookie clearing = serviceFor(null, ONE_DAY_MS).createClearingCookie();
+        ResponseCookie clearing = serviceFor(ONE_DAY_MS).createClearingCookie();
 
         assertThat(clearing.getMaxAge()).isEqualTo(Duration.ZERO);
         assertThat(clearing.getValue()).isEmpty();
@@ -104,12 +115,12 @@ class AuthCookieServiceTest {
 
     @Test
     void clearingCookieMatchesTheAccessCookieInDev() throws IOException {
-        assertClearingMatchesAccessCookie(serviceFor("application-dev.yml", ONE_DAY_MS));
+        assertClearingMatchesAccessCookie(serviceFor(ONE_DAY_MS, SHARED, "application-dev.yml"));
     }
 
     @Test
     void clearingCookieMatchesTheAccessCookieInProd() throws IOException {
-        assertClearingMatchesAccessCookie(serviceFor("application-prod.yml", ONE_DAY_MS));
+        assertClearingMatchesAccessCookie(serviceFor(ONE_DAY_MS, SHARED, "application-prod.yml"));
     }
 
     @Test
@@ -140,7 +151,7 @@ class AuthCookieServiceTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setCookies(new Cookie("other", "x"), new Cookie("__Host-access_token", JWT));
 
-        assertThat(serviceFor("application-prod.yml", ONE_DAY_MS).extractAccessToken(request)).isEqualTo(JWT);
+        assertThat(serviceFor(ONE_DAY_MS, SHARED, "application-prod.yml").extractAccessToken(request)).isEqualTo(JWT);
     }
 
     @Test
@@ -148,24 +159,27 @@ class AuthCookieServiceTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setCookies(new Cookie("token", JWT)); // the former cookie name
 
-        assertThat(serviceFor(null, ONE_DAY_MS).extractAccessToken(request)).isNull();
+        assertThat(serviceFor(ONE_DAY_MS).extractAccessToken(request)).isNull();
     }
 
     @Test
     void returnsNullWhenTheRequestHasNoCookies() throws IOException {
-        assertThat(serviceFor(null, ONE_DAY_MS).extractAccessToken(new MockHttpServletRequest())).isNull();
+        assertThat(serviceFor(ONE_DAY_MS).extractAccessToken(new MockHttpServletRequest())).isNull();
     }
 
     // ---------------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------------
 
-    /** Builds the service from a real profile file, the same way Spring binds it at startup. */
-    private static AuthCookieService serviceFor(String profileFile, long jwtExpirationMs) throws IOException {
+    /**
+     * Builds the service from real configuration files, the same way Spring binds it at startup.
+     * Later files win, like a profile file over application.yml. No file: only the record defaults.
+     */
+    private static AuthCookieService serviceFor(long jwtExpirationMs, String... files) throws IOException {
         StandardEnvironment environment = new StandardEnvironment();
-        if (profileFile != null) {
+        for (String file : files) {
             new YamlPropertySourceLoader()
-                    .load(profileFile, new ClassPathResource(profileFile))
+                    .load(file, new ClassPathResource(file))
                     .forEach(environment.getPropertySources()::addFirst);
         }
         ConfigurationPropertySources.attach(environment);
@@ -177,8 +191,6 @@ class AuthCookieServiceTest {
     }
 
     private static JwtProperties jwtProperties(long expirationMs) {
-        JwtProperties jwtProperties = new JwtProperties();
-        jwtProperties.setExpiration(expirationMs);
-        return jwtProperties;
+        return new JwtProperties("test-only-key", Duration.ofMillis(expirationMs));
     }
 }

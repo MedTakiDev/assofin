@@ -25,7 +25,7 @@ public class AuthCookieService {
     /** Cookie that stores the JWT. It expires together with the token it carries. */
     public ResponseCookie createAccessTokenCookie(String jwt) {
         return baseCookie(jwt)
-                .maxAge(Duration.ofMillis(jwtProperties.getExpiration()))
+                .maxAge(jwtProperties.expiration())
                 .build();
     }
 

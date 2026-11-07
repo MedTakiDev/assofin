@@ -100,15 +100,18 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // Allow Angular origin
-        configuration.setAllowedOrigins(corsProperties.getAllowedOrigins());
+        configuration.setAllowedOrigins(corsProperties.allowedOrigins());
         // Allow HTTP Methods
-        configuration.setAllowedMethods(corsProperties.getAllowedMethods()); // might use the cors properties class to refactor the hard coded section
+        configuration.setAllowedMethods(corsProperties.allowedMethods());
 
         // Allow headers (Authorization, Content-Type, etc.)
-        configuration.setAllowedHeaders(corsProperties.getAllowedHeaders());
+        configuration.setAllowedHeaders(corsProperties.allowedHeaders());
 
         // Expose headers to Angular if needed
-        configuration.setExposedHeaders(corsProperties.getExposedHeaders());
+        configuration.setExposedHeaders(corsProperties.exposedHeaders());
+
+        // How long the browser may cache a preflight response (was configured but never applied)
+        configuration.setMaxAge(corsProperties.maxAge());
 
         // Allow credentials (cookies / auth headers)
         configuration.setAllowCredentials(true);

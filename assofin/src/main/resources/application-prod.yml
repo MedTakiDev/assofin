@@ -1,43 +1,17 @@
 # ==============================================================================
-# DEVELOPMENT ENVIRONMENT CONFIGURATION (application-dev.yml)
+# PRODUCTION PROFILE (application-prod.yml)
 # ==============================================================================
+# Only what differs from application.yml in production. Secrets have no defaults anywhere, so a
+# missing variable stops the application at startup. The full list is in the root README.
 spring:
-  datasource:
-    # 'postgres-db' matches the service name defined in your compose.yaml file
-    # Internal container port for postgres is always 5432
-    url: jdbc:postgresql://postgres-db:5432/${POSTGRES_DB}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: update # Replaced by Flyway migrations and "validate" in PER-01.
+    show-sql: true # Turned off in PER-01.
     properties:
       hibernate:
         format_sql: true
 
-
-  mail:
-    host: ${MAIL_PROVIDER}
-    port: ${SMTP_PORT}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
-
 application:
   security:
     expose-api-docs: false # Already the default, pinned so production cannot inherit another value.
-    cookie:
-      # The __Host- prefix makes browsers enforce Secure, Path=/ and no Domain, so a subdomain or an
-      # insecure origin cannot plant or overwrite the cookie. AuthCookieProperties checks this at startup.
-      name: __Host-access_token

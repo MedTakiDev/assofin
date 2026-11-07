@@ -54,7 +54,7 @@ public class JwtService {
     }
 
     public String generateToken(Map<String, Object> claims, UserDetails userDetails) {
-        return buildToken(claims, userDetails, jwtProperties.getExpiration());
+        return buildToken(claims, userDetails, jwtProperties.expiration().toMillis());
     }
 
     private String buildToken(Map<String, Object> claims, UserDetails userDetails, long jwtExpiration) {
@@ -76,7 +76,7 @@ public class JwtService {
     }
     private Key getSignInKey() {
         // Decodes your Base64 string into a byte array
-        byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.getSecretKey());
+        byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.secretKey());
         // Generates a HMAC-SHA Key compatible with your algorithm (e.g., HS256)
         return Keys.hmacShaKeyFor(keyBytes);
     }

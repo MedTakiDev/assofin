@@ -1,9 +1,14 @@
 # ==============================================================================
 # TEST PROFILE (used with @ActiveProfiles("test") + TestcontainersConfiguration)
-# The datasource comes from the Testcontainers @ServiceConnection, not from here.
-# Every value below is a test-only fixture, never a real secret.
+# Every value below is a test-only fixture, never a real secret. Tests need no .env.
 # ==============================================================================
 spring:
+  # The real connection comes from the Testcontainers @ServiceConnection, which takes precedence.
+  # These values only replace the ${POSTGRES_*} placeholders of application.yml.
+  datasource:
+    url: jdbc:postgresql://replaced-by-testcontainers/test
+    username: test
+    password: test
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -12,11 +17,13 @@ spring:
     port: 1025
 
 application:
+  cors:
+    allowed-origins: http://localhost:4200
   security:
     jwt:
       # Base64 of a 32-byte test-only key
       secret-key: dGVzdC1vbmx5LWp3dC1zZWNyZXQta2V5LTMyLWJ5dGVzISE=
-      expiration: 3600000
+      expiration: 1h
   bootstrap:
     admin:
       email: Admin@Test.Local

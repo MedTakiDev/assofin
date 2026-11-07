@@ -1,6 +1,7 @@
 # ==============================================================================
-# DEVELOPMENT ENVIRONMENT CONFIGURATION (application-dev.yml)
+# DEVELOPMENT PROFILE (application-dev.yml)
 # ==============================================================================
+# Only what differs from application.yml for local development on plain HTTP.
 spring:
   config:
     # Reads the repository-root .env, whether the app starts from the repository root or from
@@ -9,39 +10,19 @@ spring:
     import:
       - optional:file:.env[.properties]
       - optional:file:../.env[.properties]
-  datasource:
-    # 'postgres-db' matches the service name defined in your compose.yaml file
-    # Internal container port for postgres is always 5432
-    url: jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DB}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: update # Replaced by Flyway migrations in PER-01.
     show-sql: true
     properties:
       hibernate:
         format_sql: true
 
-  mail:
-    host: ${MAIL_HOST}
-    port: ${MAIL_PORT}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
-
 application:
   security:
     expose-api-docs: true # Swagger UI for local development. Never set this in any other profile.
     cookie:
-      secure: false # Local development runs on plain HTTP. Never set this in any other profile.
+      # Local development runs on plain HTTP, which the __Host- prefix and Secure forbid.
+      # Never set these in any other profile.
+      name: access_token
+      secure: false

@@ -1,11 +1,16 @@
 # ==============================================================================
-# GLOBAL CONFIGURATION (Loaded for all profiles)
+# SHARED CONFIGURATION (application.yml, every profile)
 # ==============================================================================
+# Every shared setting lives here, read from one environment variable each. The profile files
+# only hold what really differs. The values here are the production values: only
+# application-dev.yml relaxes them for local HTTP. Production variables are listed in the root README.
 spring:
   application:
     name: assofin
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev} # Defaults to 'dev' if not in .env
+    # No fallback on purpose: a missing variable stops startup with
+    # "Profile '${SPRING_PROFILES_ACTIVE}' must contain a letter..." instead of silently running as dev.
+    active: ${SPRING_PROFILES_ACTIVE}
   # Spring Boot's fallback /error body (errors that never reach GlobalExceptionHandler).
   # These are the defaults, pinned on purpose so no profile can start leaking internals.
   # Boot 4 moved these keys from server.error.* to spring.web.error.* (the old ones are ignored).
@@ -18,6 +23,27 @@ spring:
       whitelabel:
         enabled: false
 
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT:5432}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          # Secure by default: only a local mail catcher (MailDev) turns these off, in .env.
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:true}
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
 # API documentation follows one switch, application.security.expose-api-docs (see ApiDocsProperties).
 # It is off unless a profile turns it on: when off, these endpoints do not exist.
 springdoc:
@@ -26,31 +52,22 @@ springdoc:
   swagger-ui:
     enabled: ${application.security.expose-api-docs:false}
 
-# Global security attributes
 application:
   cors:
-    allowed-origins:
-      - "http://localhost:4200"
-      - "https://your-production-domain.com"
-    allowed-methods:
-      - "GET"
-      - "POST"
-      - "PUT"
-      - "DELETE"
-      - "OPTIONS"
-      - "PATCH"
-    allowed-headers:
-      - "Authorization"
-      - "Content-Type"
-      - "X-Requested-With"
-      - "Accept"
-    exposed-headers:
-      - "Authorization"
-    max-age: 3600
+    # Comma-separated exact origins of the front end, e.g. https://app.example.org
+    # Methods, headers and max-age have defaults in CorsProperties.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
   security:
+    cookie:
+      # The __Host- prefix makes browsers enforce Secure, Path=/ and no Domain, so a subdomain or an
+      # insecure origin cannot plant or overwrite the cookie. It requires HTTPS: every server other
+      # than a developer machine must use it. AuthCookieProperties checks the combination at startup.
+      name: __Host-access_token
+      secure: true
     jwt:
       secret-key: ${JWT_SECRET_KEY}
-      expiration: ${JWT_EXPIRATION_MS}
+      # A duration such as 24h or 15m. A plain number is read as milliseconds.
+      expiration: ${JWT_EXPIRATION}
   # Default administrator, created at startup only while no user holds the ADMIN role.
   # Empty defaults keep startup working once an admin exists; if no admin exists and these are
   # empty, AdminUserInitializer stops the application with an explicit message.

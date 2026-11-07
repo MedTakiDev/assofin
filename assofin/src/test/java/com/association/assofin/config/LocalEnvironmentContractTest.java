@@ -44,6 +44,26 @@ class LocalEnvironmentContractTest {
     }
 
     @Test
+    void theProfileComesFromTheVariableWithoutAFallback() throws IOException {
+        // ${SPRING_PROFILES_ACTIVE:dev} would silently start production as dev, and no other test
+        // would notice, because tests choose their own profile with @ActiveProfiles.
+        assertThat(load("application.yml")).containsEntry("spring.profiles.active", "${SPRING_PROFILES_ACTIVE}");
+
+        for (String file : List.of("application-dev.yml", "application-prod.yml")) {
+            assertThat(load(file).keySet())
+                    .as(file)
+                    .noneMatch(key -> key.startsWith("spring.profiles.active") || key.startsWith("spring.profiles.default"));
+        }
+    }
+
+    @Test
+    void theExampleFileUsesTheDevProfile() throws IOException {
+        // .env is for local development only. An empty value silently starts without a profile, and
+        // prod breaks local runs. Production sets its profile on the deployment platform.
+        assertThat(exampleLines()).contains("SPRING_PROFILES_ACTIVE=dev");
+    }
+
+    @Test
     void everyRequiredVariableIsDocumentedInTheExampleFile() throws IOException {
         Set<String> documented = exampleLines().stream()
                 .map(line -> line.substring(0, line.indexOf('=')))

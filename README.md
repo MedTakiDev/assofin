@@ -13,21 +13,33 @@ cp .env.example .env
 # 2. Generate a JWT key and paste it into JWT_SECRET_KEY in .env
 openssl rand -base64 32
 
-# 3. Start PostgreSQL and MailDev
+# 3. Start PostgreSQL and MailDev (they keep running until "docker compose stop")
 docker compose up -d
-
-# 4. Start the application
-cd assofin
-./mvnw spring-boot:run
 ```
+
+**4. Start the application in IntelliJ:** in the `AssofinApplication` run configuration, set the repository's `.env` as the env file. It provides `SPRING_PROFILES_ACTIVE=dev`, and the `dev` profile reads the rest.
+
+From a terminal instead: `cd assofin && SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run`
 
 The API runs on `http://localhost:8080/api/v1`, and Swagger UI on `http://localhost:8080/api/v1/swagger-ui.html`.
 
 The first start creates the administrator from `ADMIN_EMAIL` and `ADMIN_PASSWORD`.
 
-**In IntelliJ:** run `AssofinApplication`. Nothing else is needed, because the `dev` profile reads `.env` itself.
+## Profiles
+
+| Where | Profile | Set by |
+|---|---|---|
+| Your machine | `dev` | `.env` through IntelliJ, or the terminal command above |
+| Every server (staging, production) | `prod` | The deployment platform |
+| Tests and CI | `test` | `@ActiveProfiles` in the tests, no variable needed |
+
+There is no fallback. **If startup stops with `Profile '${SPRING_PROFILES_ACTIVE}' must contain a letter…`, the variable isn't set.** Locally, check that the IntelliJ run configuration uses the repository `.env` as its env file. On a server, set `SPRING_PROFILES_ACTIVE=prod`.
+
+`application.yml` holds the production values. Only `application-dev.yml` relaxes them for local HTTP: a plain `access_token` cookie without `Secure`, Swagger UI and SQL logging. So an empty or misspelled profile still runs with production-safe settings. **Every server must use HTTPS:** the production cookie (`__Host-access_token`, `Secure`) is never sent over plain HTTP.
 
 ## How configuration works
+
+`application.yml` holds every shared setting, each read from one environment variable. The profile files only hold what differs.
 
 `.env` is for local development only. Spring Boot reads it in the `dev` profile, and Docker Compose reads it automatically. It holds real secrets and is ignored by git. Never commit it.
 
@@ -47,6 +59,33 @@ KEY=value
 ```
 
 Comments go on their own line. A comment after a value becomes part of the value: `POSTGRES_PASSWORD=secret #old` makes the password `secret #old`.
+
+## Production environment variables
+
+Production has no `.env`. The deployment platform injects these as real environment variables. A missing required variable stops the application at startup.
+
+| Variable | Required | Example |
+|---|---|---|
+| `SPRING_PROFILES_ACTIVE` | Yes | `prod` (exactly) |
+| `POSTGRES_HOST` | Yes | `db.internal` |
+| `POSTGRES_PORT` | No, default `5432` | `5432` |
+| `POSTGRES_DB` | Yes | `assofin` |
+| `POSTGRES_USER` | Yes | `assofin` |
+| `POSTGRES_PASSWORD` | Yes | (secret) |
+| `JWT_SECRET_KEY` | Yes | (secret, `openssl rand -base64 32`) |
+| `JWT_EXPIRATION` | Yes | `24h` |
+| `CORS_ALLOWED_ORIGINS` | Yes | `https://app.example.org` |
+| `MAIL_HOST` | Yes | `smtp.example.org` |
+| `MAIL_PORT` | Yes | `587` |
+| `MAIL_USERNAME` | No | `assofin` |
+| `MAIL_PASSWORD` | No | (secret) |
+| `MAIL_SMTP_AUTH` | No, default `true` | `true` |
+| `MAIL_SMTP_STARTTLS` | No, default `true` | `true` |
+| `ADMIN_EMAIL` | First start only | `admin@example.org` |
+| `ADMIN_PASSWORD` | First start only | (secret, 12+ characters) |
+| `ADMIN_FIRSTNAME`, `ADMIN_LASTNAME` | No | `System`, `Administrator` |
+
+`ProductionProfileStartupTest` starts the application with exactly the required variables, so this table and the code can't drift apart.
 
 ## Tests
 

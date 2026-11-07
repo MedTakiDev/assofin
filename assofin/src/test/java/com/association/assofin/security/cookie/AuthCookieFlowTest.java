@@ -45,7 +45,7 @@ class AuthCookieFlowTest {
     void loginSetsAHardenedCookieThatLivesAsLongAsTheJwt() throws Exception {
         String setCookie = login().getHeader(HttpHeaders.SET_COOKIE);
 
-        long jwtLifetimeInSeconds = jwtProperties.getExpiration() / 1000;
+        long jwtLifetimeInSeconds = jwtProperties.expiration().toSeconds();
         assertThat(setCookie)
                 .startsWith(authCookieProperties.name() + "=")
                 .contains("Max-Age=" + jwtLifetimeInSeconds)
