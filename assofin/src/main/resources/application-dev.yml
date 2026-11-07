@@ -9,11 +9,6 @@ spring:
     import:
       - optional:file:.env[.properties]
       - optional:file:../.env[.properties]
-  docker:
-    compose:
-      # Start the containers yourself with "docker compose up -d". Otherwise startup fails from
-      # assofin/, where there is no compose.yaml. CFG-03 decides whether this dependency stays.
-      enabled: false
   datasource:
     # 'postgres-db' matches the service name defined in your compose.yaml file
     # Internal container port for postgres is always 5432

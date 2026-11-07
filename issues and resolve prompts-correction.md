@@ -66,7 +66,7 @@
 | [ARC-02](#arc-02) | ⬜ OPEN | Still open. |
 | [ARC-03](#arc-03) | 🗑️ OBSOLETE | Redis was removed. **Keep the lesson when it returns.** |
 | [ARC-04](#arc-04) | ⬜ OPEN | Still open. |
-| [CFG-01](#cfg-01) | ⬜ OPEN | Still open. **One important item was missing.** |
+| [CFG-01](#cfg-01) | ⬜ OPEN | Still open. **One important item was missing.** ✏️ Simple approach agreed, use its corrected prompt. |
 | [CFG-02](#cfg-02) | ⬜ OPEN | Still open. Needed before CFG-01's new step. |
 | [CFG-03](#cfg-03) | 🟡 PARTIAL | `compose.example.yaml` and Redis are gone. The rest is open. |
 | [CFG-04](#cfg-04) | 🟡 PARTIAL | "Avalon Odyssey" is gone with registration. The rest is open. |
@@ -1406,7 +1406,7 @@ Clean up the User aggregate:
 <a id="cfg-01"></a>
 ### CFG-01 🟠 Profile configurations drift
 
-> **⬜ OPEN** · Still open. **One important item was missing.**
+> **⬜ OPEN** · Still open. **One important item was missing.** ✏️ Approach agreed on 2026-11-07, not implemented yet: **use the corrected prompt in "Decision" below**, not the original prompt.
 
 **Correction: missing from this issue.** `application.yml:8` has `${SPRING_PROFILES_ACTIVE:dev}`. If production starts without that variable, it silently runs as **dev**, so `Secure` is off and, after [SEC-05](#sec-05), the API docs are on. Add this step to the prompt:
 ```
@@ -1414,6 +1414,50 @@ Clean up the User aggregate:
    variable stops the application at startup. Local runs get it from the .env handling in CFG-02.
 ```
 **Also:** remove the Redis names from step 1 until Redis returns. Step 2's `cookie secure=false` is already done (`3417d4b`). In `application-prod.yml`, `ddl-auto: update` and `show-sql: true` are handled by [PER-01](#per-01).
+
+**Correction to the correction above:** "Local runs get it from the `.env` handling" is only true through **IntelliJ**. Spring can't read the profile from `.env` itself, because the dev profile is what reads `.env`. So the profile must already be set as a real environment variable:
+
+| How you start it | Where `SPRING_PROFILES_ACTIVE` comes from |
+|---|---|
+| IntelliJ, with the repository `.env` as the run configuration's env file | `.env` (IntelliJ passes every line as an environment variable) |
+| Terminal | `SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run` |
+| Tests and CI (`./mvnw verify`) | `@ActiveProfiles("test")`, so CI needs no variable. **Checked:** without `:dev` and with the variable unset, all 90 tests pass |
+| Production | The deployment platform |
+
+**Decision (2026-11-07): keep it simple.** A first implementation added a custom startup profile check (`EnvironmentPostProcessor`, `FailureAnalyzer`, `spring.factories`), a dev profile in the Maven plugin, and "secure by default" cookie settings. It worked, but it was more machinery than the risk needs, so it was dropped. That work is kept in `git stash` ("CFG-01 work (reverted on request)") and is reused below.
+
+What we accept with this simpler approach:
+- A missing profile stops startup with Spring's own, less readable message (`Profile '${SPRING_PROFILES_ACTIVE}' must contain a letter…`). It is loud and immediate, and the README explains it.
+- A misspelled profile (`production`) is not rejected, so the deployment configuration must be right. The README table is the reference.
+
+**Added (2026-11-07): the production cookie lives in `application.yml`.** Tested: an **empty** `SPRING_PROFILES_ACTIVE=` does not stop startup like a missing one does. Spring silently runs with no profile, exactly like a misspelled one. To make every such case safe, `application.yml` holds the production cookie, `name: __Host-access_token` and `secure: true`, written out explicitly rather than left to the Java default. `application-dev.yml` overrides both (`access_token`, `secure: false`) for local HTTP, and `application-prod.yml` has no cookie settings. If the dev override is forgotten, `AuthCookieProperties` stops startup (`__Host-` requires `secure=true`). **Condition:** every server other than a developer machine uses HTTPS. A remote server on plain HTTP must run the `dev` profile instead.
+
+✏️ **Corrected prompt (replaces the original prompt below):**
+```
+Restructure the Spring configuration, keeping it simple:
+1. application.yml holds every shared setting, one environment variable each. Keep the names
+   Docker Compose already uses, so .env never holds the same value twice:
+   POSTGRES_HOST, POSTGRES_PORT (default 5432), POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD,
+   MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD,
+   MAIL_SMTP_AUTH and MAIL_SMTP_STARTTLS (both default true; only .env turns them off for MailDev),
+   JWT_SECRET_KEY, JWT_EXPIRATION (a Duration such as 24h), CORS_ALLOWED_ORIGINS.
+   No Redis names until Redis returns (AUTH-01). MAIL_FROM and FRONTEND_BASE_URL belong to CFG-04.
+2. spring.profiles.active: ${SPRING_PROFILES_ACTIVE}, with no fallback.
+3. application-dev.yml keeps only what differs locally: the .env import, SQL logging, cookie
+   name access_token with secure=false, API docs on. application.yml holds the production cookie
+   (name __Host-access_token, secure: true). application-prod.yml: correct header, the hard-coded
+   postgres-db host removed, API docs off. Leave ddl-auto and show-sql to PER-01.
+4. JwtProperties and CorsProperties become @Validated records: required secret, positive Duration
+   lifetime, required exact CORS origins without wildcards, a toString that hides the secret.
+   Actually apply the configured CORS maxAge (SecurityConfig never called setMaxAge).
+5. Update .env.example (JWT_EXPIRATION, CORS_ALLOWED_ORIGINS, unused keys removed) and the root
+   README (how to run, profiles, production variable table).
+6. Tests: a contract test that no configuration file gives SPRING_PROFILES_ACTIVE a fallback, and
+   ProductionProfileStartupTest, which starts the prod profile with exactly the README variables.
+Out of scope: a custom profile check, a default profile in the Maven plugin, JWT key strength (SEC-09).
+After merging, every developer renames JWT_EXPIRATION_MS to JWT_EXPIRATION=24h and adds
+CORS_ALLOWED_ORIGINS=http://localhost:4200 in their own .env.
+```
 
 **Where:** `application-dev.yml`, `application-prod.yml`, `application.yml`.
 **Problem:**
@@ -1483,6 +1527,8 @@ Make environment configuration reproducible and safe:
 > **🟡 PARTIAL** · `compose.example.yaml` and Redis are gone. The rest is open.
 
 **Correction:** step 1's deletion is done. Still open: `maildev/maildev` has no tag, ports aren't bound to `127.0.0.1`, commented services point to `./backend` and `./frontend`, and the `spring-boot-docker-compose` decision. Redis returns with [AUTH-01](#auth-01).
+
+**Decision (2026-11-07): `spring-boot-docker-compose` is removed** (step 4, first option dropped). The containers are started explicitly from a terminal with `docker compose up -d`, and the backend runs from IntelliJ. Reasons: one source of truth for the connection (the `POSTGRES_*` variables), containers that keep running across backend restarts, the same behavior in IntelliJ, a terminal and CI, and no conflict with the next step, where Compose builds and runs the backend itself. Tests are unaffected: they use Testcontainers.
 
 **Where:** `compose.yaml`, `compose.example.yaml`, `pom.xml` (`spring-boot-docker-compose`).
 **Problem:** `compose.yaml` has no secrets (it's all `${VAR}`), so the "example" copy isn't needed, and it has already drifted (Redis without ports or healthcheck, maildev commented out, frontend port 4200 vs 80). `spring-boot-docker-compose` auto-starts `compose.yaml` and creates connection details that override the manual YAML, so two sources of truth. `maildev/maildev` has no version tag. Commented-out backend/frontend services reference non-existent `./backend`, `./frontend`.
