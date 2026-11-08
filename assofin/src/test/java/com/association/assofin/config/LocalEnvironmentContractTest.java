@@ -1,9 +1,12 @@
 package com.association.assofin.config;
 
+import com.association.assofin.TestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LocalEnvironmentContractTest {
 
     private static final Path ENV_EXAMPLE = Path.of("..", ".env.example");
+
+    private static final Path COMPOSE_FILE = Path.of("..", "compose.yaml");
 
     /** ${NAME} without a default value: the application can't start unless NAME is provided. */
     private static final Pattern REQUIRED_PLACEHOLDER = Pattern.compile("\\$\\{([A-Z][A-Z0-9_]*)}");
@@ -86,6 +91,23 @@ class LocalEnvironmentContractTest {
         assertThat(exampleLines()).isNotEmpty().allMatch(line -> VALID_LINE.matcher(line).matches());
     }
 
+    @Test
+    void developmentAndTestsUseTheSamePostgresImage() throws IOException {
+        // Otherwise the tests can pass on a database version nobody develops against.
+        assertThat(loadCompose()).containsEntry("services.postgres.image", TestcontainersConfiguration.POSTGRES_IMAGE);
+    }
+
+    @Test
+    void everyPublishedPortIsReachableFromThisMachineOnly() throws IOException {
+        // Docker publishes ports past the host firewall, and a port without an address listens on
+        // every network interface.
+        Map<String, Object> ports = new HashMap<>(loadCompose());
+        ports.keySet().removeIf(key -> !key.matches("services\\..+\\.ports\\[\\d+]"));
+
+        assertThat(ports).isNotEmpty();
+        assertThat(ports.values()).allMatch(port -> String.valueOf(port).startsWith("127.0.0.1:"));
+    }
+
     /** Setting lines only: comments and blank lines are dropped. */
     private static List<String> exampleLines() throws IOException {
         return Files.readAllLines(ENV_EXAMPLE).stream()
@@ -94,8 +116,16 @@ class LocalEnvironmentContractTest {
     }
 
     private static Map<String, Object> load(String file) throws IOException {
+        return load(new ClassPathResource(file));
+    }
+
+    private static Map<String, Object> loadCompose() throws IOException {
+        return load(new FileSystemResource(COMPOSE_FILE));
+    }
+
+    private static Map<String, Object> load(Resource file) throws IOException {
         Map<String, Object> properties = new HashMap<>();
-        for (var source : new YamlPropertySourceLoader().load(file, new ClassPathResource(file))) {
+        for (var source : new YamlPropertySourceLoader().load(file.getDescription(), file)) {
             EnumerablePropertySource<?> enumerable = (EnumerablePropertySource<?>) source;
             for (String name : enumerable.getPropertyNames()) {
                 properties.put(name, String.valueOf(enumerable.getProperty(name)));

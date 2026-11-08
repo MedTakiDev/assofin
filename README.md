@@ -13,8 +13,8 @@ cp .env.example .env
 # 2. Generate a JWT key and paste it into JWT_SECRET_KEY in .env
 openssl rand -base64 32
 
-# 3. Start PostgreSQL and MailDev (they keep running until "docker compose stop")
-docker compose up -d
+# 3. Start PostgreSQL and MailDev and wait until they are healthy (they keep running until "docker compose stop")
+docker compose up -d --wait
 ```
 
 **4. Start the application in IntelliJ:** in the `AssofinApplication` run configuration, set the repository's `.env` as the env file. It provides `SPRING_PROFILES_ACTIVE=dev`, and the `dev` profile reads the rest.
