@@ -1,0 +1,115 @@
+# Checks every back-end change on a clean machine. The steps are the commands documented in the
+# README, so a failure here can be reproduced locally.
+#
+# Pinned on purpose: Actions to a full commit hash and container images to a digest, because a tag
+# can be moved by its owner. Dependabot updates the Actions; update the image digests by hand.
+name: Backend CI
+
+on:
+  # Every branch: work stays on feature branches for a long time before it reaches main.
+  push:
+  pull_request:
+    branches: [main]
+
+# Read-only: if a dependency or an Action is compromised, it can't change the repository.
+permissions:
+  contents: read
+
+# A newer push cancels the older run of the same branch.
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 21
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: assofin/pom.xml
+
+      # Compiles, enforces the build rules and runs every test. Testcontainers uses the runner's
+      # Docker. Tests choose their own profile, so no .env and no SPRING_PROFILES_ACTIVE are needed.
+      - name: Build and run all tests
+        working-directory: assofin
+        run: ./mvnw -B -ntp verify
+
+      - name: Keep the test reports of a failed build
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-reports
+          path: assofin/target/surefire-reports
+          retention-days: 7
+
+      - name: Keep the coverage report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-report
+          path: assofin/target/site/jacoco
+          retention-days: 7
+
+      # The list of every library in the jar, with the versions really resolved.
+      - name: Keep the SBOM
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom
+          path: assofin/target/classes/META-INF/sbom/application.cdx.json
+          if-no-files-found: error
+          retention-days: 30
+
+  dependency-scan:
+    name: Scan dependencies for known vulnerabilities
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the exceptions file
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download the SBOM
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sbom
+          path: sbom
+
+      # Fails on any known vulnerability. Exceptions, each with a reason and an expiry date, live
+      # in assofin/osv-scanner.toml.
+      - name: Scan with OSV-Scanner
+        run: >-
+          docker run --rm -v "$PWD:/repo:ro"
+          ghcr.io/google/osv-scanner@sha256:4f3b7e2c64b9d38a5febc5a7e4a3dfef1d1362f726dea7a2ef4762b46469fcd0
+          scan source --config /repo/assofin/osv-scanner.toml -L /repo/sbom/application.cdx.json
+
+  secret-scan:
+    name: Scan the git history for secrets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      # The whole history: a secret deleted in a later commit can still be read by anyone who clones.
+      - name: Check out the full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The command-line tool, because the official Action needs a paid license for organizations.
+      # --redact keeps secret values out of the public log.
+      - name: Scan with gitleaks
+        run: >-
+          docker run --rm -v "$PWD:/repo:ro"
+          ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+          git /repo --config /repo/.gitleaks.toml --redact --no-banner

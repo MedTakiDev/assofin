@@ -13,7 +13,7 @@
 
 **Stickers:** ✅ DONE · 🟡 PARTIAL (the main problem is fixed, work remains) · ⬜ OPEN · 🗑️ OBSOLETE (no longer applies) · ⏸️ DEFERRED (applies only if a feature returns) · ✏️ corrected prompt
 
-**Totals:** 17 done · 11 partial · 24 open · 2 obsolete · 1 deferred (updated 2026-11-08 for CFG-04; 2026-11-07 for CFG-01, CFG-02 and CFG-05; CFG-03 stays partial)
+**Totals:** 17 done · 11 partial · 27 open · 2 obsolete · 1 deferred (updated 2026-11-08: CFG-04 done, new issues OPS-02, OPS-03 and OPS-04 added; 2026-11-07 for CFG-01, CFG-02 and CFG-05; CFG-03 stays partial)
 
 > **Order of work changed:** back end first, then front end, and Phase 1 is finished last. **Follow [section 8](#8-current-plan-back-end-first-feature-freeze)**, not section 5 or section 7.
 
@@ -71,7 +71,7 @@
 | [CFG-03](#cfg-03) | 🟡 PARTIAL | `compose.example.yaml` and Redis are gone. `spring-boot-docker-compose` removed in `f22721d`. Image tags, healthchecks, `127.0.0.1` ports and app services remain. |
 | [CFG-04](#cfg-04) | ✅ DONE | `10a38c5`. Mail copy, subjects and `FRONTEND_BASE_URL` handed over to BUG-06. |
 | [CFG-05](#cfg-05) | ✅ DONE | `60afa07`. Coverage threshold to TST-01, Spotless binding to HYG-01. |
-| [OPS-01](#ops-01) | ⬜ OPEN | Still open. |
+| [OPS-01](#ops-01) | ⬜ OPEN | Still open. Back-end CI (step 5) implemented, awaiting commit. Front-end CI moved to OPS-02. |
 | [LOG-01](#log-01) | ⬜ OPEN | Still open. Some facts below are out of date. |
 | [TST-01](#tst-01) | 🟡 PARTIAL | Backend foundation exists: 87 tests. Frontend specs are still CLI stubs. |
 | [HYG-01](#hyg-01) | 🟡 PARTIAL | Some items disappeared with Phase 1. Most remain. |
@@ -85,6 +85,9 @@
 | [FE-08](#fe-08) | ⬜ OPEN | Still open. One claim is out of date. |
 | [FE-09](#fe-09) | ⬜ OPEN | **New. 🔴 The frontend does not compile.** Postponed to the start of stage B. |
 | [AUTH-01](#auth-01) | ⬜ OPEN | **New. Refresh tokens with Redis.** |
+| [OPS-02](#ops-02) | ⬜ OPEN | **New. CI for the front end.** Stage B2, needs FE-09 and FE-08. |
+| [OPS-03](#ops-03) | ⬜ OPEN | **New. CD for the back end.** Stage D, needs a target server. |
+| [OPS-04](#ops-04) | ⬜ OPEN | **New. CD for the front end.** Stage D, after OPS-03. |
 
 ---
 
@@ -1616,9 +1619,21 @@ Clean up assofin/pom.xml:
 <a id="ops-01"></a>
 ### OPS-01 🟠 No delivery or operations foundation
 
-> **⬜ OPEN** · Still open.
+> **⬜ OPEN** · Still open. **Update 2026-11-08: the back-end part of step 5 is implemented, awaiting commit.** See "State of step 5" below.
 
 **Correction:** step 2: remove `redis` from health until Redis returns. Step 3 is owned by [LOG-01](#log-01). Do step 5 (CI) **early**, not late: a CI build would have caught [FE-09](#fe-09) the day it happened.
+
+**State of step 5 (2026-11-08).**
+
+| Part of step 5 | State |
+|---|---|
+| Back end: `mvn verify` with Testcontainers | Implemented: `.github/workflows/backend-ci.yml`, job "Build and test" |
+| Dependency scanning | Implemented for the back end: OSV-Scanner on the SBOM, exceptions in `assofin/osv-scanner.toml` with a reason and an expiry date, and `.github/dependabot.yml`. **Dependabot only starts once the file reaches `main`** ([step 1.7](#phase-1-7)) |
+| gitleaks | Implemented: whole history, `.gitleaks.toml` allows only the test-only JWT key, by exact value. Handed over from [CFG-02](#cfg-02). 79 commits scanned, no real secret found |
+| Front end: `npm ci`, lint, test, build | Moved to [OPS-02](#ops-02) |
+| Docker build | Stays with step 1 here, then [OPS-03](#ops-03) and [OPS-04](#ops-04) publish the images |
+
+Steps 1, 2, 4, 6 and 7 stay open in stage A7. Delivery to a server is not part of this issue: see [OPS-03](#ops-03) and [OPS-04](#ops-04).
 
 > ℹ️ Item 3 (logging and correlation id) is covered in detail by [LOG-01](#log-01). Do it there, not here.
 **Problem:** No Dockerfiles, no CI, no Actuator (health/readiness/metrics), no structured logging or correlation id, no root README explaining setup, no OpenAPI metadata (title, security scheme for the cookie), no graceful shutdown settings.
@@ -2216,6 +2231,149 @@ Tests
 
 ---
 
+<a id="ops-02"></a>
+### OPS-02 🟠 No CI for the front end
+
+> **⬜ OPEN** · New (2026-11-08). Takes over the front-end part of step 5 of [OPS-01](#ops-01). Stage B2.
+
+**Where:** `.github/workflows/frontend-ci.yml` (new), `.github/dependabot.yml`, `assofin-frontend/package.json`.
+**Problem:** the back end is checked on every push, the front end is not. [FE-09](#fe-09) shows the cost: the front end stopped compiling and nobody noticed, because nothing builds it automatically. A CI job can't be added today, because a check that is always red teaches people to ignore CI. `package.json` has no `lint` script yet ([FE-08](#fe-08)), and the Node version is not declared anywhere (no `engines`, no `.nvmrc`), so a build can use a different Node than a developer does.
+
+**Prompt:**
+```
+Prerequisites: FE-09 (the app compiles), FE-08 (ESLint and a lint script).
+Follow the conventions of .github/workflows/backend-ci.yml.
+
+1. Declare the Node version in assofin-frontend/.nvmrc and use it through setup-node's
+   node-version-file, so CI and developers run the same version.
+2. .github/workflows/frontend-ci.yml, triggered by push and by pull_request to main:
+   permissions contents: read, concurrency per ref, timeout-minutes, ubuntu-24.04, Actions pinned
+   to a full commit hash, checkout with persist-credentials: false. No secrets.
+3. Job "Lint, test and build", in assofin-frontend: npm ci (never npm install, so package-lock.json
+   is honored), npm run lint, npm test in headless single-run mode, npm run build.
+4. Provide NG_APP_API_BASE_URL explicitly with a placeholder: .env is not in the repository.
+5. Keep the coverage report as an artifact, and the test output of a failed run.
+6. Job "Scan dependencies": OSV-Scanner on assofin-frontend/package-lock.json, with the same image
+   digest and the same exception rule (reason and expiry date) as the back end.
+7. .github/dependabot.yml: add the npm ecosystem for /assofin-frontend, weekly, and group the
+   @angular/* updates, because they must move together.
+8. gitleaks already scans the whole repository in backend-ci.yml. Don't add a second scan.
+9. README: add the front-end job to the "Continuous integration" table.
+
+Verify: actionlint; every command in a fresh clone with an empty npm cache and no .env; then prove
+that a type error, a lint error, a failing test and a vulnerable package each fail the job.
+```
+
+---
+
+<a id="ops-03"></a>
+### OPS-03 🟠 No CD for the back end
+
+> **⬜ OPEN** · New (2026-11-08). Stage D. It needs a target server, which doesn't exist yet.
+
+**Where:** `.github/workflows/backend-cd.yml` (new), `docs/deployment.md` (new), GitHub Environments.
+**Problem:** CI answers "is this change good?", but nothing answers "how does it reach a server?". Without a defined pipeline a release depends on one person's machine and memory: nothing records which version runs where, a failed release has no rehearsed way back, and production secrets end up on laptops. For a financial application, that is not acceptable. This is **Continuous Delivery**: every release is prepared automatically, and a person approves production.
+
+**Prerequisites and why:**
+- [OPS-01](#ops-01) steps 1, 2 and 4: an image to ship, a readiness probe to wait for, and graceful shutdown so a restart doesn't cut requests.
+- [PER-01](#per-01): Flyway with `ddl-auto: validate`. Deploying with `ddl-auto: update` lets the application change a production schema with no review and no way back.
+- [step 1.7](#phase-1-7): CD starts from `main`.
+- **A decision:** the target platform (a VPS with Compose, Kubernetes, a managed container service). Record it in an ADR first, because step 6 depends on it.
+
+**Prompt:**
+```
+Add continuous delivery for the back end. The target platform is recorded in docs/adr first.
+
+Pipeline
+1. .github/workflows/backend-cd.yml starts only when Backend CI succeeded on main (workflow_run),
+   so code that failed CI can never be released. Follow the conventions of backend-ci.yml: Actions
+   pinned to a commit hash, read-only by default, and extra permissions (packages: write) only on
+   the job that needs them. Do not use cancel-in-progress: a deployment must not be cut halfway.
+2. Build once. Build the image from the Dockerfile one time, tag it with the commit SHA (never
+   latest as the deployed reference), push it to GitHub Container Registry, and deploy that same
+   digest to every environment. Never rebuild for production.
+3. Before publishing: scan the image with Trivy and fail on HIGH or CRITICAL, attach the SBOM, and
+   generate a build provenance attestation.
+
+Environments and secrets
+4. GitHub Environments staging and production. Production requires a reviewer's approval, so a
+   person decides what reaches it.
+5. Secrets live only in the Environments or a secret manager, and reach the app as real environment
+   variables: exactly the README table, with SPRING_PROFILES_ACTIVE=prod. Prefer OIDC to long-lived
+   cloud credentials. No .env on any server.
+
+Deployment
+6. Deploy to staging automatically, wait for /actuator/health/readiness, and run a smoke test (the
+   health endpoint and an anonymous request answered 401). Then wait for approval and do the same
+   on production.
+7. HTTPS is mandatory: TLS ends at the reverse proxy, and server.forward-headers-strategy is set.
+   The __Host-access_token cookie is Secure, so login silently fails without it.
+8. Database: take a backup before a production migration. Migrations are expand-then-contract, so
+   the previous version still runs against the new schema and a rollback stays possible.
+9. If readiness or the smoke test fails, redeploy the previous digest automatically and fail the
+   run. Record which digest runs in each environment.
+
+Documentation
+10. docs/deployment.md: the pipeline, how to approve, how to roll back by hand, how to rotate a
+    secret, and what to do after a failed migration.
+
+Verify: actionlint; run the pipeline against staging; prove that failed CI starts no release, that
+production waits for approval, that a broken image rolls back by itself, and that both environments
+run the identical digest.
+```
+
+---
+
+<a id="ops-04"></a>
+### OPS-04 🟠 No CD for the front end
+
+> **⬜ OPEN** · New (2026-11-08). Stage D, after [OPS-03](#ops-03).
+
+**Where:** `.github/workflows/frontend-cd.yml` (new), `assofin-frontend/src/app/core/config/app.config.ts`, `docs/deployment.md`.
+**Problem:** the front end has no delivery path either, and it adds one trap: `app.config.ts` reads `import.meta.env.NG_APP_API_BASE_URL`, so the API address is **fixed at build time**. One image can't be promoted from staging to production, which breaks "build once": production would run a build that was never tested. The order matters too: the back end comes first, because the front end calls its API.
+
+**Prerequisites and why:**
+- [OPS-02](#ops-02): nothing is released without passing front-end CI.
+- [OPS-03](#ops-03): the same pipeline, environments and approvals, reused rather than designed twice.
+- [OPS-01](#ops-01) step 1: the nginx image, with `/api` proxied to the back end so the app is same-origin.
+- [FE-06](#fe-06): the API URL handling, and [SEC-07](#sec-07), so CSRF works in the same-origin setup.
+
+**Prompt:**
+```
+Prerequisites: OPS-02, OPS-03, OPS-01 step 1 (frontend image), FE-06, SEC-07.
+Add continuous delivery for the front end, reusing the structure of backend-cd.yml.
+
+Build once
+1. Remove the build-time API address: the app calls the relative path /api/v1, and nginx proxies it
+   to the back end. The same image then runs in every environment, and CORS is not needed in
+   production. Remove NG_APP_API_BASE_URL if nothing else needs it.
+2. .github/workflows/frontend-cd.yml starts only when the front-end CI succeeded on main. Build the
+   image once, tag it with the commit SHA, scan it with Trivy, attach the SBOM and the provenance
+   attestation, push it to GitHub Container Registry, and promote the same digest.
+
+Serving
+3. nginx: SPA fallback to index.html; Cache-Control no-cache on index.html and immutable on the
+   hashed assets, so a release reaches users at once; gzip or brotli; security headers
+   (Content-Security-Policy without unsafe-inline for scripts, HSTS, X-Content-Type-Options,
+   Referrer-Policy, frame-ancestors 'none'). Run as a non-root user.
+
+Release
+4. Same GitHub Environments and approval as OPS-03. Deploy after the back end when both change.
+5. API compatibility: the back end stays backward compatible with the previous front end during a
+   release, because browsers keep the old app open. A breaking change needs a new API version
+   (see the versioning decision in CFG-04).
+6. After deploying, run a browser smoke test (Playwright): the page loads, login works through the
+   proxy, the __Host- cookie is set, logout works, and the console has no CSP violation.
+7. If the smoke test fails, redeploy the previous digest automatically.
+8. Add the front end to docs/deployment.md.
+
+Verify: actionlint; run the pipeline against staging; prove that the staging and production digests
+are identical, that a hashed asset is cached while index.html is revalidated, and that a broken
+release rolls back by itself.
+```
+
+---
+
 ## 7. Corrected order of work
 
 > **🗑️ SUPERSEDED** by [section 8](#8-current-plan-back-end-first-feature-freeze). Kept for reference.
@@ -2259,7 +2417,7 @@ Tests
 | Step | Goal | Issues |
 |---|---|---|
 | B1 | **It compiles** | [FE-09](#fe-09). Must come first |
-| B2 | Strict tooling and same-origin dev | [FE-02](#fe-02), [FE-08](#fe-08), [FE-06](#fe-06), CI for the front end from [OPS-01](#ops-01) |
+| B2 | Strict tooling and same-origin dev | [FE-02](#fe-02), [FE-08](#fe-08), [FE-06](#fe-06), CI for the front end ([OPS-02](#ops-02)) |
 | B3 | CSRF, now that the proxy exists | [SEC-07](#sec-07) |
 | B4 | Error and API contract | [FE-03](#fe-03), [FE-05](#fe-05) |
 | B5 | Authentication state | [FE-01](#fe-01), [AUTH-01](#auth-01) (silent refresh), [FE-04](#fe-04) |
@@ -2274,6 +2432,19 @@ Tests
 |---|---|---|
 | C1 | Create accounts, built on the final architecture | [step 1.6](#phase-1-6) |
 | C2 | Merge to `main` | [step 1.7](#phase-1-7) |
+
+### Stage D: delivery
+
+Added 2026-11-08. CD starts from `main`, so it comes after C2. It waits for a real target server: choose the platform first and record it in an ADR.
+
+| Step | Goal | Issues |
+|---|---|---|
+| D1 | Deliver the back end | [OPS-03](#ops-03). First, because the front end calls its API |
+| D2 | Deliver the front end | [OPS-04](#ops-04), reusing the pipeline from D1 |
+
+**Stage D is done when** a change merged to `main` reaches staging by itself, production only after a person approves it, and a broken release rolls back by itself.
+
+Stage D is not part of the readiness gate below: the gate is about whether the code base is ready for new features, and delivery depends on having a server.
 
 <a id="readiness-gate"></a>
 ### Readiness gate: ready for new domains and features

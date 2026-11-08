@@ -96,3 +96,19 @@ cd assofin
 ```
 
 Tests need Docker (Testcontainers) but not `.env`.
+
+## Continuous integration
+
+GitHub Actions runs `.github/workflows/backend-ci.yml` on every push and on pull requests to `main`:
+
+| Job | What it does | When it fails, locally run |
+|---|---|---|
+| Build and test | `./mvnw verify`: compile, build rules (Maven Enforcer) and all tests | `cd assofin && ./mvnw -B -ntp verify` |
+| Dependency scan | OSV-Scanner on the SBOM of the build | See the vulnerability id in the job log |
+| Secret scan | gitleaks over the whole git history | `docker run --rm -v "$PWD:/repo:ro" ghcr.io/gitleaks/gitleaks:v8.30.1 git /repo --config /repo/.gitleaks.toml --redact` |
+
+A failed build keeps its test reports as the `test-reports` artifact on the run's page.
+
+**A reported vulnerability:** update the dependency. Only if no fixed version exists, add it to `assofin/osv-scanner.toml` with a reason and an expiry date.
+
+**A reported secret:** treat it as compromised and change it wherever it is used. Deleting it from git is not enough, because it stays in the history.

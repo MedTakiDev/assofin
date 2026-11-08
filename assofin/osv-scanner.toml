@@ -1,0 +1,9 @@
+# Accepted vulnerabilities. CI fails on every known vulnerability that is not listed here.
+#
+# Add an entry only when no fixed version exists or the vulnerable code can't be reached, and always
+# give a reason and an expiry date. After that date the build fails again, so it gets reviewed.
+#
+# [[IgnoredVulns]]
+# id = "GHSA-xxxx-xxxx-xxxx"
+# ignoreUntil = 2027-01-31
+# reason = "No fixed version yet. The vulnerable parser is not used by this application."

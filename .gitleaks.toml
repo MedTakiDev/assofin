@@ -1,0 +1,8 @@
+# Secret scanning rules: gitleaks' defaults, plus the exceptions below.
+[extend]
+useDefault = true
+
+# Allowed by exact value, not by file, so a real secret pasted into a test file is still reported.
+[[allowlists]]
+description = "Test-only JWT key, used by application-test.yml and ProductionProfileStartupTest. It protects nothing."
+regexes = ['''^dGVzdC1vbmx5LWp3dC1zZWNyZXQta2V5LTMyLWJ5dGVzISE=$''']

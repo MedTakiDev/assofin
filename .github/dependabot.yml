@@ -1,0 +1,15 @@
+# Opens pull requests for outdated dependencies. GitHub only reads this file from the default
+# branch, so it takes effect once it reaches main.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /assofin
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Keeps the commit hashes the workflows are pinned to up to date.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
