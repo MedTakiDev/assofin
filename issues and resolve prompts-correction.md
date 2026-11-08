@@ -13,7 +13,7 @@
 
 **Stickers:** ✅ DONE · 🟡 PARTIAL (the main problem is fixed, work remains) · ⬜ OPEN · 🗑️ OBSOLETE (no longer applies) · ⏸️ DEFERRED (applies only if a feature returns) · ✏️ corrected prompt
 
-**Totals:** 17 done · 11 partial · 27 open · 2 obsolete · 1 deferred (updated 2026-11-08: CFG-04 done, new issues OPS-02, OPS-03 and OPS-04 added; 2026-11-07 for CFG-01, CFG-02 and CFG-05; CFG-03 stays partial)
+**Totals:** 17 done · 12 partial · 26 open · 2 obsolete · 1 deferred (updated 2026-11-08: CFG-04 done, OPS-01 partial, new issues OPS-02, OPS-03 and OPS-04 added; 2026-11-07 for CFG-01, CFG-02 and CFG-05; CFG-03 stays partial)
 
 > **Order of work changed:** back end first, then front end, and Phase 1 is finished last. **Follow [section 8](#8-current-plan-back-end-first-feature-freeze)**, not section 5 or section 7.
 
@@ -71,7 +71,7 @@
 | [CFG-03](#cfg-03) | 🟡 PARTIAL | `compose.example.yaml` and Redis are gone. `spring-boot-docker-compose` removed in `f22721d`. Image tags, healthchecks, `127.0.0.1` ports and app services remain. |
 | [CFG-04](#cfg-04) | ✅ DONE | `10a38c5`. Mail copy, subjects and `FRONTEND_BASE_URL` handed over to BUG-06. |
 | [CFG-05](#cfg-05) | ✅ DONE | `60afa07`. Coverage threshold to TST-01, Spotless binding to HYG-01. |
-| [OPS-01](#ops-01) | ⬜ OPEN | Still open. Back-end CI (step 5) implemented, awaiting commit. Front-end CI moved to OPS-02. |
+| [OPS-01](#ops-01) | 🟡 PARTIAL | Back-end CI (step 5) done in `89b6016`, first run on GitHub green. Front-end CI moved to OPS-02. Steps 1, 2, 4, 6 and 7 still open. |
 | [LOG-01](#log-01) | ⬜ OPEN | Still open. Some facts below are out of date. |
 | [TST-01](#tst-01) | 🟡 PARTIAL | Backend foundation exists: 87 tests. Frontend specs are still CLI stubs. |
 | [HYG-01](#hyg-01) | 🟡 PARTIAL | Some items disappeared with Phase 1. Most remain. |
@@ -1619,7 +1619,7 @@ Clean up assofin/pom.xml:
 <a id="ops-01"></a>
 ### OPS-01 🟠 No delivery or operations foundation
 
-> **⬜ OPEN** · Still open. **Update 2026-11-08: the back-end part of step 5 is implemented, awaiting commit.** See "State of step 5" below.
+> **🟡 PARTIAL** · Back-end part of step 5 done in commit `89b6016`, and its first run on GitHub is green. **Still open:** steps 1, 2, 4, 6 and 7. Step 3 belongs to [LOG-01](#log-01), and front-end CI to [OPS-02](#ops-02). See "State of step 5" below.
 
 **Correction:** step 2: remove `redis` from health until Redis returns. Step 3 is owned by [LOG-01](#log-01). Do step 5 (CI) **early**, not late: a CI build would have caught [FE-09](#fe-09) the day it happened.
 
