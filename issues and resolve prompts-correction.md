@@ -13,7 +13,7 @@
 
 **Stickers:** ✅ DONE · 🟡 PARTIAL (the main problem is fixed, work remains) · ⬜ OPEN · 🗑️ OBSOLETE (no longer applies) · ⏸️ DEFERRED (applies only if a feature returns) · ✏️ corrected prompt
 
-**Totals:** 16 done · 12 partial · 24 open · 2 obsolete · 1 deferred (updated 2026-11-07 for CFG-01, CFG-02 and CFG-05; CFG-03 stays partial)
+**Totals:** 17 done · 11 partial · 24 open · 2 obsolete · 1 deferred (updated 2026-11-08 for CFG-04; 2026-11-07 for CFG-01, CFG-02 and CFG-05; CFG-03 stays partial)
 
 > **Order of work changed:** back end first, then front end, and Phase 1 is finished last. **Follow [section 8](#8-current-plan-back-end-first-feature-freeze)**, not section 5 or section 7.
 
@@ -69,7 +69,7 @@
 | [CFG-01](#cfg-01) | ✅ DONE | `104930f`, with the simple approach. `ddl-auto`/`show-sql` in prod left to PER-01. |
 | [CFG-02](#cfg-02) | ✅ DONE | `687e7c1`. Secret scanning handed over to OPS-01. |
 | [CFG-03](#cfg-03) | 🟡 PARTIAL | `compose.example.yaml` and Redis are gone. `spring-boot-docker-compose` removed in `f22721d`. Image tags, healthchecks, `127.0.0.1` ports and app services remain. |
-| [CFG-04](#cfg-04) | 🟡 PARTIAL | "Avalon Odyssey" is gone with registration. The rest is open. |
+| [CFG-04](#cfg-04) | ✅ DONE | `10a38c5`. Mail copy, subjects and `FRONTEND_BASE_URL` handed over to BUG-06. |
 | [CFG-05](#cfg-05) | ✅ DONE | `60afa07`. Coverage threshold to TST-01, Spotless binding to HYG-01. |
 | [OPS-01](#ops-01) | ⬜ OPEN | Still open. |
 | [LOG-01](#log-01) | ⬜ OPEN | Still open. Some facts below are out of date. |
@@ -984,7 +984,7 @@ Fix the user profile API contract:
 <a id="bug-06"></a>
 ### BUG-06 🟠 `@Async` is a no-op; registration and email are not consistent
 
-> **⏸️ DEFERRED** · No mail is sent today. Applies only when mail returns.
+> **⏸️ DEFERRED** · No mail is sent today. Applies only when mail returns. **Also received from [CFG-04](#cfg-04):** `application.name` and subjects as properties, the email copy, a plain-text part, the multipart mode, and `FRONTEND_BASE_URL` for links. The sender is already configurable (`MAIL_FROM`).
 
 **Correction:** `@Async` is still on `MailService` without `@EnableAsync`, but nothing calls it. Steps 2 and 4 (registration, resend activation) no longer apply. When invitation mail arrives, keep the idea: publish an event and send with `@TransactionalEventListener(AFTER_COMMIT)` + `@Async`.
 
@@ -1552,9 +1552,24 @@ Consolidate Docker Compose:
 <a id="cfg-04"></a>
 ### CFG-04 🟡 Hard-coded values from another project and placeholders
 
-> **🟡 PARTIAL** · "Avalon Odyssey" is gone with registration. The rest is open.
+> **✅ DONE** · Commit `10a38c5`. Sender from the validated `MAIL_FROM` (`MailProperties`), context path `/api/v1` without the trailing slash, and no `Authorization` header allowed or exposed by CORS. Already done earlier: "Avalon Odyssey" with registration ([Phase 1](#phase-1)) and the CORS placeholder in [CFG-01](#cfg-01). **Handed over:** subjects, `application.name`, email copy, plain-text part and `FRONTEND_BASE_URL` go to [BUG-06](#bug-06). See "State and decisions" below.
 
 **Correction:** still open: `MailService.FROM`, the CORS placeholder domain, and the `/api/v1/` trailing slash. `exposed-headers: Authorization` is stale because the app uses cookies; replace it with `X-Request-Id` in [LOG-01](#log-01).
+
+**State and decisions (2026-11-08).** Checked against the code at `9207672`. Key fact: **nothing calls `MailService` any more**, because registration was removed, so the activation email, its template and `EmailTemplateName` are unused today.
+
+| Item | State |
+|---|---|
+| "Avalon Odyssey" subject in `AuthenticationService` | ✅ Already done: removed with registration ([Phase 1](#phase-1)) |
+| CORS placeholder domain `https://your-production-domain.com` (step 2) | ✅ Already done in [CFG-01](#cfg-01) (`104930f`): origins come only from `CORS_ALLOWED_ORIGINS`, required, no wildcards |
+| Hard-coded sender `contacts@avaodessey.com` (part of step 1) | Implemented: validated `MailProperties` (`application.mail.from`, env `MAIL_FROM`, required, `@Email`), used by `MailService`. A foreign domain must never be the sender: receiving servers reject it (SPF, DKIM) or it looks like phishing |
+| Context path `/api/v1/` (step 3) | Implemented: `/api/v1`. Spring Boot already dropped the slash at runtime (log: `context path '/api/v1'`), so URLs don't change. **Decision:** the version stays in the context path while there is one API version. Moving it to the controllers (`/api` + `/v1/...`, or Spring Framework 7 API versioning) keeps every URL unchanged, so it is done when a second version is needed |
+| `exposed-headers: Authorization` | Implemented: removed from both CORS defaults (allowed and exposed). The JWT travels only in the HttpOnly cookie; nothing reads an `Authorization` header. Exposed headers are empty until [LOG-01](#log-01) adds `X-Request-Id` |
+| Rest of step 1: `application.name`, subjects as properties, `appName` in the template | ⏸️ Moved to [BUG-06](#bug-06): no email is sent, and the next one (invitation, password reset) needs its own template and subject |
+| Step 4: email wording ("activation code" while it sends a link), plain-text part, multipart mode | ⏸️ Moved to [BUG-06](#bug-06), same reason. Escaping is already safe: Thymeleaf's `th:text` escapes HTML |
+| `FRONTEND_BASE_URL` (links in emails) | ⏸️ Moved to [BUG-06](#bug-06): an unused required variable would be configuration debt |
+
+Tests: `MailPropertiesTest` (missing or malformed sender stops startup), `MailServiceTest` (every email uses the configured sender), `CorsPolicyTest` (a preflight for `Content-Type` is allowed, one for `Authorization` is refused, no headers are exposed), `ProductionProfileStartupTest` with `MAIL_FROM`.
 
 **Where:** `MailService.java:26` (`contacts@avaodessey.com`), `AuthenticationService.java:86` ("Avalon Odyssey account activation"), `application.yml` CORS `https://your-production-domain.com`, `server.servlet.context-path: /api/v1/` (trailing slash), the email template text "use the following activation code" while it sends a link.
 
