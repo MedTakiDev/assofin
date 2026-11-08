@@ -24,6 +24,8 @@ application:
       # Base64 of a 32-byte test-only key
       secret-key: dGVzdC1vbmx5LWp3dC1zZWNyZXQta2V5LTMyLWJ5dGVzISE=
       expiration: 1h
+  mail:
+    from: no-reply@test.local
   bootstrap:
     admin:
       email: Admin@Test.Local

@@ -77,6 +77,7 @@ Production has no `.env`. The deployment platform injects these as real environm
 | `CORS_ALLOWED_ORIGINS` | Yes | `https://app.example.org` |
 | `MAIL_HOST` | Yes | `smtp.example.org` |
 | `MAIL_PORT` | Yes | `587` |
+| `MAIL_FROM` | Yes | `no-reply@assofin.org` (a domain the SMTP server may send for) |
 | `MAIL_USERNAME` | No | `assofin` |
 | `MAIL_PASSWORD` | No | (secret) |
 | `MAIL_SMTP_AUTH` | No, default `true` | `true` |

@@ -19,8 +19,7 @@ import java.util.Map;
 public class MailService {
     private final JavaMailSender mailSender;
     private final SpringTemplateEngine templateEngine;
-
-    private final String FROM = "contacts@avaodessey.com";
+    private final MailProperties mailProperties;
 
     //TODO on MailService.sendAccountActivationEmail saying it's unused since 1.4 and will be reused for "account created" or password-reset emails.
     @Async
@@ -51,7 +50,7 @@ public class MailService {
             //props.put("activation_code", activationCode);
             Context context = new Context();
             context.setVariables(props);
-            helper.setFrom(FROM);
+            helper.setFrom(mailProperties.from());
             helper.setTo(to);
             helper.setSubject(subject);
 

@@ -68,6 +68,9 @@ application:
       secret-key: ${JWT_SECRET_KEY}
       # A duration such as 24h or 15m. A plain number is read as milliseconds.
       expiration: ${JWT_EXPIRATION}
+  mail:
+    # Sender of every email. Must belong to a domain the SMTP server may send for (SPF, DKIM).
+    from: ${MAIL_FROM}
   # Default administrator, created at startup only while no user holds the ADMIN role.
   # Empty defaults keep startup working once an admin exists; if no admin exists and these are
   # empty, AdminUserInitializer stops the application with an explicit message.
@@ -80,4 +83,6 @@ application:
 
 server:
   servlet:
-    context-path: /api/v1/
+    # The version lives here while there is a single API version. Moving it to the controllers
+    # later (context-path /api, mappings /v1/...) keeps every URL unchanged.
+    context-path: /api/v1

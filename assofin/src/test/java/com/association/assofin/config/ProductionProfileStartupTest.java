@@ -1,6 +1,7 @@
 package com.association.assofin.config;
 
 import com.association.assofin.TestcontainersConfiguration;
+import com.association.assofin.mail.MailProperties;
 import com.association.assofin.security.ApiDocsProperties;
 import com.association.assofin.security.CorsProperties;
 import com.association.assofin.security.cookie.AuthCookieProperties;
@@ -33,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "CORS_ALLOWED_ORIGINS=https://app.example.org",
         "MAIL_HOST=smtp.example.org",
         "MAIL_PORT=587",
+        "MAIL_FROM=no-reply@example.org",
         "ADMIN_EMAIL=admin@example.org",
         "ADMIN_PASSWORD=prod-test-password"
 })
@@ -44,6 +46,7 @@ class ProductionProfileStartupTest {
     @Autowired private CorsProperties corsProperties;
     @Autowired private AuthCookieProperties cookieProperties;
     @Autowired private ApiDocsProperties apiDocsProperties;
+    @Autowired private MailProperties mailProperties;
 
     @Value("${spring.mail.properties.mail.smtp.auth}") private boolean smtpAuth;
     @Value("${spring.mail.properties.mail.smtp.starttls.enable}") private boolean smtpStartTls;
@@ -59,6 +62,7 @@ class ProductionProfileStartupTest {
 
         assertThat(smtpAuth).as("SMTP auth defaults to on").isTrue();
         assertThat(smtpStartTls).as("SMTP STARTTLS defaults to on").isTrue();
+        assertThat(mailProperties.from()).isEqualTo("no-reply@example.org");
         // show-sql and ddl-auto in production are handled by PER-01.
     }
 }
