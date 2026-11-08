@@ -13,7 +13,7 @@
 
 **Stickers:** ✅ DONE · 🟡 PARTIAL (the main problem is fixed, work remains) · ⬜ OPEN · 🗑️ OBSOLETE (no longer applies) · ⏸️ DEFERRED (applies only if a feature returns) · ✏️ corrected prompt
 
-**Totals:** 17 done · 12 partial · 26 open · 2 obsolete · 1 deferred (updated 2026-11-08: CFG-04 done, OPS-01 partial, new issues OPS-02, OPS-03 and OPS-04 added; 2026-11-07 for CFG-01, CFG-02 and CFG-05; CFG-03 stays partial)
+**Totals:** 18 done · 11 partial · 26 open · 2 obsolete · 1 deferred (updated 2026-11-08: CFG-03 and CFG-04 done, OPS-01 partial, new issues OPS-02, OPS-03 and OPS-04 added; 2026-11-07 for CFG-01, CFG-02 and CFG-05)
 
 > **Order of work changed:** back end first, then front end, and Phase 1 is finished last. **Follow [section 8](#8-current-plan-back-end-first-feature-freeze)**, not section 5 or section 7.
 
@@ -68,7 +68,7 @@
 | [ARC-04](#arc-04) | ⬜ OPEN | Still open. |
 | [CFG-01](#cfg-01) | ✅ DONE | `104930f`, with the simple approach. `ddl-auto`/`show-sql` in prod left to PER-01. |
 | [CFG-02](#cfg-02) | ✅ DONE | `687e7c1`. Secret scanning handed over to OPS-01. |
-| [CFG-03](#cfg-03) | 🟡 PARTIAL | `compose.example.yaml` and Redis are gone. `spring-boot-docker-compose` removed in `f22721d`. Image tags, healthchecks, `127.0.0.1` ports and app services remain. |
+| [CFG-03](#cfg-03) | ✅ DONE | `f22721d` and `a97068c`. Images pinned, healthchecks, ports on `127.0.0.1`. Backend and frontend services handed over to OPS-01 step 1. |
 | [CFG-04](#cfg-04) | ✅ DONE | `10a38c5`. Mail copy, subjects and `FRONTEND_BASE_URL` handed over to BUG-06. |
 | [CFG-05](#cfg-05) | ✅ DONE | `60afa07`. Coverage threshold to TST-01, Spotless binding to HYG-01. |
 | [OPS-01](#ops-01) | 🟡 PARTIAL | Back-end CI (step 5) done in `89b6016`, first run on GitHub green. Front-end CI moved to OPS-02. Steps 1, 2, 4, 6 and 7 still open. |
@@ -1527,7 +1527,13 @@ Make environment configuration reproducible and safe:
 <a id="cfg-03"></a>
 ### CFG-03 🟡 Compose duplication and overlap
 
-> **🟡 PARTIAL** · `compose.example.yaml` and Redis are gone. Step 4 done in commit `f22721d`: `spring-boot-docker-compose` removed, containers started with `docker compose up -d`. Still open: pinned image tags, healthchecks for every service, ports bound to `127.0.0.1`, and the backend and frontend services (with [OPS-01](#ops-01)).
+> **✅ DONE** · Commits `f22721d` (step 4) and `a97068c` (steps 2, 3 and 5). `compose.example.yaml` and Redis are gone, images are pinned, every service has a healthcheck, and ports are bound to `127.0.0.1`. **Handed over:** the backend and frontend services and `depends_on` go to step 1 of [OPS-01](#ops-01), because they need its Dockerfiles. See "Decisions" below.
+
+**Decisions (2026-11-08).** Two choices differ from the prompt below.
+- **Debian, not `-alpine`:** `postgres:17.11-trixie` is the build already in use. Alpine has a different C library, which can change text sort order and affect indexes in an existing database.
+- **`maildev/maildev:2.2.1`, the version in use:** moving to 3.0.0 is a separate upgrade. The image defines its own healthcheck, so Compose doesn't repeat it.
+
+The commented backend and frontend services were removed, because they pointed to folders that don't exist. The Postgres healthcheck runs over TCP, because during first-start initialization a check over the socket reports ready before the real server is up. `LocalEnvironmentContractTest` fails if Compose and the tests use different Postgres images, or if a port loses `127.0.0.1`.
 
 **Correction:** step 1's deletion is done. Still open: `maildev/maildev` has no tag, ports aren't bound to `127.0.0.1`, commented services point to `./backend` and `./frontend`, and the `spring-boot-docker-compose` decision. Redis returns with [AUTH-01](#auth-01).
 
